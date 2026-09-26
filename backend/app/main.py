@@ -5,6 +5,10 @@ from app.routes.auth import router as auth_router
 from app.routes.about import router as about_router
 from app.routes.skill import router as skill_router
 from app.routes.project import router as project_router
+from app.routes.blog import router as blog_router
+from app.routes.experience import router as experience_router
+from app.routes.testimonial import router as testimonial_router
+from app.routes.service import router as service_router
 
 # Import all models so SQLAlchemy knows about every table
 from app import models
@@ -36,6 +40,26 @@ app.include_router(
 
 app.include_router(
     project_router,
+    prefix="/api/v1"
+)
+
+app.include_router(
+    blog_router,
+    prefix="/api/v1"
+)
+
+app.include_router(
+    experience_router,
+    prefix="/api/v1"
+)
+
+app.include_router(
+    testimonial_router,
+    prefix="/api/v1"
+)
+
+app.include_router(
+    service_router, 
     prefix="/api/v1"
 )
 

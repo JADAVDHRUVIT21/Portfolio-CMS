@@ -1,0 +1,30 @@
+{
+  "name": "portfolio-cms",
+  "version": "1.0.0",
+  "description": "Full-stack portfolio website with custom CMS backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JADAVDHRUVIT21/Portfolio-CMS.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/JADAVDHRUVIT21/Portfolio-CMS/issues"
+  },
+  "homepage": "https://github.com/JADAVDHRUVIT21/Portfolio-CMS#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
+    "multer": "^2.4.0",
+    "pg": "^8.23.0",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
+  }
+}

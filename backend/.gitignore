@@ -1,0 +1,2 @@
+backend/uploads/*
+!backend/uploads/.gitkeep

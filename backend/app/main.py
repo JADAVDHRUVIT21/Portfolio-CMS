@@ -9,6 +9,8 @@ from app.routes.blog import router as blog_router
 from app.routes.experience import router as experience_router
 from app.routes.testimonial import router as testimonial_router
 from app.routes.service import router as service_router
+from fastapi.staticfiles import StaticFiles
+from app.routes.media import router as media_router
 
 # Import all models so SQLAlchemy knows about every table
 from app import models
@@ -22,6 +24,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.mount(
+    "/uploads",
+    StaticFiles(directory="uploads"),
+    name="uploads"
+)
 
 app.include_router(
     auth_router,
@@ -60,6 +67,12 @@ app.include_router(
 
 app.include_router(
     service_router, 
+    prefix="/api/v1"
+)
+
+
+app.include_router(
+    media_router,
     prefix="/api/v1"
 )
 

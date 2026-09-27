@@ -5,6 +5,7 @@ const path = require("path");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger");
 const pool = require("./db");
+const authenticateToken = require("./authMiddleware");
 
 const app = express();
 
@@ -102,9 +103,11 @@ app.get("/", (req, res) => {
  * /upload/image:
  *   post:
  *     summary: Upload an image
- *     description: Upload a JPEG, PNG, WEBP, or GIF image. Maximum file size is 5 MB.
+ *     description: Upload an image using a valid Bearer access token. Supported formats are JPEG, PNG, WEBP, and GIF. Maximum file size is 5 MB.
  *     tags:
  *       - Upload
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -123,11 +126,14 @@ app.get("/", (req, res) => {
  *         description: Image uploaded successfully
  *       400:
  *         description: Invalid file, no file uploaded, or file exceeds 5 MB
+ *       401:
+ *         description: Missing or invalid authentication token
  *       500:
  *         description: Failed to save media information
  */
 app.post(
   "/upload/image",
+  authenticateToken,
   upload.single("file"),
   async (req, res) => {
     if (!req.file) {

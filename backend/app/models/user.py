@@ -8,7 +8,10 @@ from app.core.database import Base
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True
+    )
 
     full_name: Mapped[str] = mapped_column(
         String(150),
@@ -30,6 +33,12 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
+        nullable=False
+    )
+
+    is_admin: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
         nullable=False
     )
 

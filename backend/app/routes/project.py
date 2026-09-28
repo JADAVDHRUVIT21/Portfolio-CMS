@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_admin
 from app.models.project import Project
 from app.models.user import User
 from app.schemas.project import (
@@ -72,7 +72,7 @@ def get_project(
 def create_project(
     data: ProjectCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     project = Project(
         title=data.title,
@@ -100,7 +100,7 @@ def update_project(
     project_id: int,
     data: ProjectUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     project = (
         db.query(Project)
@@ -136,7 +136,7 @@ def update_project(
 def delete_project(
     project_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     project = (
         db.query(Project)

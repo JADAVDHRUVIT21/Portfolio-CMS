@@ -2,19 +2,25 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_admin
 from app.models.media import Media
 from app.models.user import User
 from app.schemas.media import MediaResponse
 
 
-router = APIRouter(prefix="/media", tags=["Media"])
+router = APIRouter(
+    prefix="/media",
+    tags=["Media"],
+)
 
 
-@router.get("", response_model=list[MediaResponse])
+@router.get(
+    "",
+    response_model=list[MediaResponse],
+)
 def get_media(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     media = (
         db.query(Media)
@@ -25,11 +31,14 @@ def get_media(
     return media
 
 
-@router.get("/{media_id}", response_model=MediaResponse)
+@router.get(
+    "/{media_id}",
+    response_model=MediaResponse,
+)
 def get_media_item(
     media_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     media = (
         db.query(Media)
@@ -53,7 +62,7 @@ def get_media_item(
 def delete_media(
     media_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     media = (
         db.query(Media)

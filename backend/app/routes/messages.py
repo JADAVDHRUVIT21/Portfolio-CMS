@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_admin
 from app.models.message import Message
 from app.models.user import User
 from app.schemas.contact import ContactResponse
@@ -20,7 +20,7 @@ router = APIRouter(
 )
 def get_messages(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     messages = (
         db.query(Message)
@@ -38,7 +38,7 @@ def get_messages(
 def get_message(
     message_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     message = (
         db.query(Message)
@@ -62,7 +62,7 @@ def get_message(
 def mark_message_as_read(
     message_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     message = (
         db.query(Message)
@@ -91,7 +91,7 @@ def mark_message_as_read(
 def delete_message(
     message_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     message = (
         db.query(Message)

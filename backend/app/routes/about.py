@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_admin
 from app.models.about import About
 from app.models.user import User
 from app.schemas.about import AboutCreate, AboutUpdate, AboutResponse
@@ -40,7 +40,7 @@ def get_about(
 def create_about(
     data: AboutCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     existing_about = db.query(About).first()
 
@@ -74,7 +74,7 @@ def create_about(
 def update_about(
     data: AboutUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     about = db.query(About).first()
 

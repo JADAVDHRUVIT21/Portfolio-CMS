@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger");
 const pool = require("./db");
@@ -16,6 +17,13 @@ const uploadDirectory = path.join(
   "backend",
   "uploads"
 );
+
+// Create upload directory if it does not exist
+if (!fs.existsSync(uploadDirectory)) {
+  fs.mkdirSync(uploadDirectory, {
+    recursive: true,
+  });
+}
 
 // Middleware
 app.use(cors());
@@ -188,9 +196,30 @@ app.post(
     } catch (error) {
       console.error("Database insert error:", error);
 
+      // Remove uploaded file if database insertion fails
+      try {
+        if (
+          req.file &&
+          req.file.path &&
+          fs.existsSync(req.file.path)
+        ) {
+          fs.unlinkSync(req.file.path);
+
+          console.log(
+            "Uploaded file removed after database error:",
+            req.file.filename
+          );
+        }
+      } catch (cleanupError) {
+        console.error(
+          "Failed to remove uploaded file after database error:",
+          cleanupError
+        );
+      }
+
       return res.status(500).json({
         detail:
-          "Image uploaded but failed to save media information",
+          "Image upload failed and the uploaded file was removed",
       });
     }
   }

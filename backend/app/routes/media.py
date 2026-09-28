@@ -44,3 +44,30 @@ def get_media_item(
         )
 
     return media
+
+
+@router.delete(
+    "/{media_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_media(
+    media_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    media = (
+        db.query(Media)
+        .filter(Media.id == media_id)
+        .first()
+    )
+
+    if media is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Media not found",
+        )
+
+    db.delete(media)
+    db.commit()
+
+    return None

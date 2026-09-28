@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_admin
 from app.models.experience import Experience
 from app.models.user import User
 from app.schemas.experience import (
@@ -11,20 +11,36 @@ from app.schemas.experience import (
     ExperienceResponse,
 )
 
-router = APIRouter(prefix="/experience", tags=["Experience"])
+
+router = APIRouter(
+    prefix="/experience",
+    tags=["Experience"]
+)
 
 
-@router.get("", response_model=list[ExperienceResponse])
-def get_experiences(db: Session = Depends(get_db)):
+@router.get(
+    "",
+    response_model=list[ExperienceResponse]
+)
+def get_experiences(
+    db: Session = Depends(get_db)
+):
     experiences = (
         db.query(Experience)
-        .order_by(Experience.display_order.asc(), Experience.id.asc())
+        .order_by(
+            Experience.display_order.asc(),
+            Experience.id.asc()
+        )
         .all()
     )
+
     return experiences
 
 
-@router.get("/{experience_id}", response_model=ExperienceResponse)
+@router.get(
+    "/{experience_id}",
+    response_model=ExperienceResponse
+)
 def get_experience(
     experience_id: int,
     db: Session = Depends(get_db),
@@ -52,7 +68,7 @@ def get_experience(
 def create_experience(
     data: ExperienceCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     experience = Experience(
         company=data.company,
@@ -79,7 +95,7 @@ def update_experience(
     experience_id: int,
     data: ExperienceUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     experience = (
         db.query(Experience)
@@ -114,7 +130,7 @@ def update_experience(
 def delete_experience(
     experience_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     experience = (
         db.query(Experience)

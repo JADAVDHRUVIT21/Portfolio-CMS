@@ -93,12 +93,14 @@ def login(
 
     access_token = create_access_token(
         user_id=user.id,
-        email=user.email
+        email=user.email,
+        is_admin=user.is_admin,
     )
 
     refresh_token = create_refresh_token(
         user_id=user.id,
-        email=user.email
+        email=user.email,
+        is_admin=user.is_admin,
     )
 
     return {
@@ -158,6 +160,7 @@ def refresh_access_token(
     access_token = create_access_token(
         user_id=user.id,
         email=user.email,
+        is_admin=user.is_admin,
     )
 
     return {

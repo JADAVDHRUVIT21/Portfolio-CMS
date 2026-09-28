@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_admin
 from app.models.blog import Blog
 from app.models.user import User
 from app.schemas.blog import (
@@ -30,7 +30,10 @@ def get_blogs(
     blogs = (
         db.query(Blog)
         .filter(Blog.is_published == True)
-        .order_by(Blog.published_at.desc(), Blog.id.desc())
+        .order_by(
+            Blog.published_at.desc(),
+            Blog.id.desc()
+        )
         .all()
     )
 
@@ -71,7 +74,7 @@ def get_blog(
 def create_blog(
     data: BlogCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     existing_blog = (
         db.query(Blog)
@@ -114,7 +117,7 @@ def update_blog(
     blog_id: int,
     data: BlogUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     blog = (
         db.query(Blog)
@@ -170,7 +173,7 @@ def update_blog(
 def delete_blog(
     blog_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     blog = (
         db.query(Blog)

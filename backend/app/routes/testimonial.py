@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_admin
 from app.models.testimonial import Testimonial
 from app.models.user import User
 from app.schemas.testimonial import (
@@ -11,11 +11,20 @@ from app.schemas.testimonial import (
     TestimonialResponse,
 )
 
-router = APIRouter(prefix="/testimonials", tags=["Testimonials"])
+
+router = APIRouter(
+    prefix="/testimonials",
+    tags=["Testimonials"]
+)
 
 
-@router.get("", response_model=list[TestimonialResponse])
-def get_testimonials(db: Session = Depends(get_db)):
+@router.get(
+    "",
+    response_model=list[TestimonialResponse]
+)
+def get_testimonials(
+    db: Session = Depends(get_db)
+):
     testimonials = (
         db.query(Testimonial)
         .filter(Testimonial.is_published == True)
@@ -25,10 +34,14 @@ def get_testimonials(db: Session = Depends(get_db)):
         )
         .all()
     )
+
     return testimonials
 
 
-@router.get("/{testimonial_id}", response_model=TestimonialResponse)
+@router.get(
+    "/{testimonial_id}",
+    response_model=TestimonialResponse
+)
 def get_testimonial(
     testimonial_id: int,
     db: Session = Depends(get_db),
@@ -59,7 +72,7 @@ def get_testimonial(
 def create_testimonial(
     data: TestimonialCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     testimonial = Testimonial(
         name=data.name,
@@ -87,7 +100,7 @@ def update_testimonial(
     testimonial_id: int,
     data: TestimonialUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     testimonial = (
         db.query(Testimonial)
@@ -123,7 +136,7 @@ def update_testimonial(
 def delete_testimonial(
     testimonial_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     testimonial = (
         db.query(Testimonial)

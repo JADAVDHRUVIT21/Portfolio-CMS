@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_admin
 from app.models.service import Service
 from app.models.user import User
 from app.schemas.service import (
@@ -11,11 +11,20 @@ from app.schemas.service import (
     ServiceResponse,
 )
 
-router = APIRouter(prefix="/services", tags=["Services"])
+
+router = APIRouter(
+    prefix="/services",
+    tags=["Services"]
+)
 
 
-@router.get("", response_model=list[ServiceResponse])
-def get_services(db: Session = Depends(get_db)):
+@router.get(
+    "",
+    response_model=list[ServiceResponse]
+)
+def get_services(
+    db: Session = Depends(get_db)
+):
     services = (
         db.query(Service)
         .filter(Service.is_published == True)
@@ -25,10 +34,14 @@ def get_services(db: Session = Depends(get_db)):
         )
         .all()
     )
+
     return services
 
 
-@router.get("/{service_id}", response_model=ServiceResponse)
+@router.get(
+    "/{service_id}",
+    response_model=ServiceResponse
+)
 def get_service(
     service_id: int,
     db: Session = Depends(get_db),
@@ -59,7 +72,7 @@ def get_service(
 def create_service(
     data: ServiceCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     service = Service(
         title=data.title,
@@ -84,7 +97,7 @@ def update_service(
     service_id: int,
     data: ServiceUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     service = (
         db.query(Service)
@@ -117,7 +130,7 @@ def update_service(
 def delete_service(
     service_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
     service = (
         db.query(Service)

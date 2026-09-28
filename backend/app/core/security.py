@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 SECRET_KEY = os.getenv(
     "SECRET_KEY",
     "portfolio-cms-secret-key-change-this"
@@ -44,7 +45,8 @@ def verify_password(
 
 def create_access_token(
     user_id: int,
-    email: str
+    email: str,
+    is_admin: bool
 ) -> str:
 
     expire = datetime.now(timezone.utc) + timedelta(
@@ -54,6 +56,7 @@ def create_access_token(
     payload = {
         "sub": str(user_id),
         "email": email,
+        "is_admin": is_admin,
         "type": "access",
         "exp": expire
     }
@@ -67,7 +70,8 @@ def create_access_token(
 
 def create_refresh_token(
     user_id: int,
-    email: str
+    email: str,
+    is_admin: bool
 ) -> str:
 
     expire = datetime.now(timezone.utc) + timedelta(
@@ -77,6 +81,7 @@ def create_refresh_token(
     payload = {
         "sub": str(user_id),
         "email": email,
+        "is_admin": is_admin,
         "type": "refresh",
         "exp": expire
     }

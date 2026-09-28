@@ -31,6 +31,12 @@ function authenticateToken(req, res, next) {
       });
     }
 
+    if (payload.is_admin !== true) {
+      return res.status(403).json({
+        detail: "Admin access required",
+      });
+    }
+
     req.user = payload;
 
     next();

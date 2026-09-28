@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from jose import JWTError, jwt
 
 from app.core.database import get_db
 from app.core.security import (
+    SECRET_KEY,
+    ALGORITHM,
     hash_password,
     verify_password,
     create_access_token,
@@ -15,6 +18,7 @@ from app.schemas.auth import (
     LoginRequest,
     UserResponse,
     TokenResponse,
+    RefreshTokenRequest,
 )
 
 
@@ -101,6 +105,64 @@ def login(
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer"
+    }
+
+
+@router.post(
+    "/refresh"
+)
+def refresh_access_token(
+    request: RefreshTokenRequest,
+    db: Session = Depends(get_db),
+):
+    try:
+        payload = jwt.decode(
+            request.refresh_token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+        )
+
+        user_id = payload.get("sub")
+        token_type = payload.get("type")
+
+        if user_id is None or token_type != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token",
+            )
+
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+
+    user = (
+        db.query(User)
+        .filter(User.id == int(user_id))
+        .first()
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive",
+        )
+
+    access_token = create_access_token(
+        user_id=user.id,
+        email=user.email,
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
     }
 
 

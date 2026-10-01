@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { Mail, Send, CheckCircle2, AlertCircle, X } from "lucide-react";
-import api from "../services/api";
+import { Reveal } from "./Hero";
+
+/* ⚠️ Replace with your real email */
+const FORM_ENDPOINT = "https://formsubmit.co/ajax/dhruvit715@gmail.com";
 
 export default function Contact() {
   const [form, setForm] = useState({
@@ -41,8 +44,39 @@ export default function Contact() {
     setStatus({ type: "", message: "" });
 
     try {
-      await api.post("/contact", form);
+      // FormSubmit AJAX endpoint
+      const response = await fetch(FORM_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          subject: form.subject,
+          message: form.message,
 
+          /* --- FormSubmit extras --- */
+          _subject: `Portfolio Contact: ${form.subject}`,
+          _captcha: "false",
+          _template: "table",
+          // So when you hit "Reply" in Gmail, it goes to the sender:
+          _replyto: form.email,
+          // Optional auto-response to the sender (only works if you enable
+          // "Autoresponse" in your FormSubmit dashboard — see notes below)
+          _autoresponse:
+            `Hi ${form.name},\n\nThanks for reaching out! I've received your message and will get back to you soon.\n\n— Dhruvit Jadav`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.success === "false") {
+        throw new Error(data.message || "Failed to send");
+      }
+
+      // Success — clear the form
       setForm({
         name: "",
         email: "",
@@ -57,7 +91,7 @@ export default function Contact() {
 
       setToast({
         type: "success",
-        message: "Message sent successfully!",
+        message: "Mail sent successfully!",
       });
     } catch (err) {
       console.error("Failed to send contact message:", err);
@@ -69,7 +103,7 @@ export default function Contact() {
 
       setToast({
         type: "error",
-        message: "Failed to send message. Please try again.",
+        message: "Failed to send mail. Please try again.",
       });
     } finally {
       setSubmitting(false);
@@ -153,162 +187,209 @@ export default function Contact() {
           <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
             {/* Left side — info */}
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">
-                Contact
-              </p>
+              <Reveal delay={0} y={20}>
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">
+                  Contact
+                </p>
+              </Reveal>
 
-              <h2 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
-                Let&apos;s build something useful.
-              </h2>
+              <Reveal delay={120} y={28}>
+                <h2 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
+                  Let&apos;s build something useful.
+                </h2>
+              </Reveal>
 
-              <p className="mt-6 max-w-lg text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
-                Have a project, idea, or opportunity in mind? Send me a message
-                and I&apos;ll get back to you.
-              </p>
+              <Reveal delay={240} y={24}>
+                <p className="mt-6 max-w-lg text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
+                  Have a project, idea, or opportunity in mind? Send me a message
+                  and I&apos;ll get back to you.
+                </p>
+              </Reveal>
 
-              <div className="mt-8 flex items-center gap-4">
-                <div className="
-                  flex h-12 w-12 items-center justify-center rounded-xl
-                  bg-blue-100 text-blue-600
-                  dark:bg-blue-600/20 dark:text-blue-400
-                ">
-                  <Mail size={22} />
+              <Reveal delay={360} y={20}>
+                <div className="mt-8 flex items-center gap-4">
+                  <div
+                    className="
+                      flex h-12 w-12 items-center justify-center rounded-xl
+                      bg-blue-100 text-blue-600
+                      dark:bg-blue-600/20 dark:text-blue-400
+                      transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]
+                      hover:scale-110 hover:rotate-3
+                      hover:bg-blue-500 hover:text-white
+                      hover:shadow-[0_8px_20px_rgba(37,99,235,0.45)]
+                    "
+                  >
+                    <Mail size={22} />
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Get in touch
+                    </p>
+                    <p className="mt-1 font-medium text-slate-900 dark:text-white">
+                        dhruvit715@gmail.com
+                    </p>
+                    <p className="mt-1 font-medium text-slate-900 dark:text-white">
+                      Send a Mail using the form
+                    </p>
+                  </div>
                 </div>
-
-                <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Get in touch
-                  </p>
-                  <p className="mt-1 font-medium text-slate-900 dark:text-white">
-                    Send a message using the form
-                  </p>
-                </div>
-              </div>
+              </Reveal>
             </div>
 
             {/* Form */}
-            <form
-              onSubmit={handleSubmit}
-              className="
-                rounded-3xl border p-6 shadow-xl sm:p-8
-                border-slate-200 bg-white
-                dark:border-slate-800 dark:bg-slate-900 dark:shadow-2xl
-                transition-colors duration-300
-              "
-            >
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                  >
-                    Name
-                  </label>
-
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={form.name}
-                    onChange={handleChange}
-                    required
-                    className="
-                      w-full rounded-xl border px-4 py-3 text-sm outline-none transition
-                      border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500
-                      dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500
-                    "
-                    placeholder="Your name"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                  >
-                    Email
-                  </label>
-
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    required
-                    className="
-                      w-full rounded-xl border px-4 py-3 text-sm outline-none transition
-                      border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500
-                      dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500
-                    "
-                    placeholder="you@example.com"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-5">
-                <label
-                  htmlFor="subject"
-                  className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                >
-                  Subject
-                </label>
-
-                <input
-                  id="subject"
-                  name="subject"
-                  type="text"
-                  value={form.subject}
-                  onChange={handleChange}
-                  required
-                  className="
-                    w-full rounded-xl border px-4 py-3 text-sm outline-none transition
-                    border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500
-                    dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500
-                  "
-                  placeholder="Project inquiry"
-                />
-              </div>
-
-              <div className="mt-5">
-                <label
-                  htmlFor="message"
-                  className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                >
-                  Message
-                </label>
-
-                <textarea
-                  id="message"
-                  name="message"
-                  value={form.message}
-                  onChange={handleChange}
-                  required
-                  rows={6}
-                  className="
-                    w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition
-                    border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500
-                    dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500
-                  "
-                  placeholder="Tell me about your project..."
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
+            <Reveal delay={180} y={34}>
+              <form
+                onSubmit={handleSubmit}
                 className="
-                  mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl
-                  bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white
-                  transition hover:bg-blue-500
-                  disabled:cursor-not-allowed disabled:opacity-60
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400
+                  group relative overflow-hidden rounded-3xl border p-6 shadow-xl sm:p-8
+                  border-slate-200 bg-white
+                  dark:border-slate-800 dark:bg-slate-900 dark:shadow-2xl
+                  transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]
+                  hover:shadow-[0_30px_60px_-25px_rgba(37,99,235,0.35)]
+                  dark:hover:shadow-[0_30px_60px_-25px_rgba(59,130,246,0.45)]
                 "
               >
-                {submitting ? "Sending..." : "Send Message"}
-                {!submitting && <Send size={17} />}
-              </button>
-            </form>
+                <span
+                  aria-hidden="true"
+                  className="
+                    pointer-events-none absolute inset-x-0 top-0 h-[2px]
+                    bg-gradient-to-r from-blue-500/0 via-blue-500 to-indigo-500/0
+                    opacity-0 transition-opacity duration-500
+                    group-hover:opacity-100
+                  "
+                />
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <label
+                      htmlFor="name"
+                      className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                    >
+                      Name
+                    </label>
+
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      value={form.name}
+                      onChange={handleChange}
+                      required
+                      className="
+                        w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300
+                        border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
+                        focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)]
+                        dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500
+                        dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]
+                      "
+                      placeholder="Your name"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="email"
+                      className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                    >
+                      Email
+                    </label>
+
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      required
+                      className="
+                        w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300
+                        border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
+                        focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)]
+                        dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500
+                        dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]
+                      "
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <label
+                    htmlFor="subject"
+                    className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                  >
+                    Subject
+                  </label>
+
+                  <input
+                    id="subject"
+                    name="subject"
+                    type="text"
+                    value={form.subject}
+                    onChange={handleChange}
+                    required
+                    className="
+                      w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300
+                      border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
+                      focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)]
+                      dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500
+                      dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]
+                    "
+                    placeholder="Project inquiry"
+                  />
+                </div>
+
+                <div className="mt-5">
+                  <label
+                    htmlFor="message"
+                    className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                  >
+                    Message
+                  </label>
+
+                  <textarea
+                    id="message"
+                    name="message"
+                    value={form.message}
+                    onChange={handleChange}
+                    required
+                    rows={6}
+                    className="
+                      w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300
+                      border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
+                      focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)]
+                      dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500
+                      dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]
+                    "
+                    placeholder="Tell me about your project..."
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="
+                    group/btn mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl
+                    bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white
+                    transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]
+                    hover:bg-blue-500 hover:-translate-y-0.5
+                    hover:shadow-[0_15px_35px_-12px_rgba(37,99,235,0.7)]
+                    disabled:cursor-not-allowed disabled:opacity-60
+                    disabled:hover:translate-y-0 disabled:hover:shadow-none
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400
+                  "
+                >
+                  {submitting ? "Sending..." : "Send Message"}
+                  {!submitting && (
+                    <Send
+                      size={17}
+                      className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5"
+                    />
+                  )}
+                </button>
+              </form>
+            </Reveal>
           </div>
         </div>
       </section>

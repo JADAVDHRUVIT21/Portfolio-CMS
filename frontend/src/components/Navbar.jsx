@@ -13,9 +13,16 @@ const navItems = [
   { label: "Contact", href: "#contact" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ introDone = true }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState("dark");
+
+  // Read saved theme immediately when the component is created.
+  // This prevents the page from starting in dark mode on every refresh.
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem("theme");
+    return saved === "light" ? "light" : "dark";
+  });
+
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [scrolled, setScrolled] = useState(false);
@@ -23,51 +30,70 @@ export default function Navbar() {
   const [pillReady, setPillReady] = useState(false);
 
   const navRef = useRef(null);
-  const navItemsRef = useRef(null); // wrapper around nav links
+  const navItemsRef = useRef(null);
   const pillRef = useRef(null);
   const itemRefs = useRef([]);
 
-  /* Entrance */
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  /* Theme */
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    setTheme(saved === "light" ? "light" : "dark");
-  }, []);
-
+  /* ---------------------------------------------
+     Apply saved theme
+  --------------------------------------------- */
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
+
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const toggleTheme = () =>
-    setTheme((t) => (t === "dark" ? "light" : "dark"));
+  const toggleTheme = () => {
+    setTheme((currentTheme) =>
+      currentTheme === "dark" ? "light" : "dark"
+    );
+  };
 
-  /* Scroll state */
+  /* ---------------------------------------------
+     Entrance — waits for intro (preloader) to finish
+  --------------------------------------------- */
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    if (!introDone) return;
+
+    const t = setTimeout(() => setMounted(true), 150);
+
+    return () => clearTimeout(t);
+  }, [introDone]);
+
+  /* ---------------------------------------------
+     Scroll state
+  --------------------------------------------- */
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+
+    window.addEventListener("scroll", onScroll, {
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   /* ---------------------------------------------
-     PILL POSITIONING — uses offsetLeft/offsetWidth
-     relative to the nav items wrapper (offsetParent).
-     This is immune to backdrop-blur stacking contexts.
+     PILL POSITIONING
   --------------------------------------------- */
   const movePill = useCallback((index) => {
     const el = itemRefs.current[index];
     const pill = pillRef.current;
+
     if (!el || !pill) return;
 
-    // el.offsetLeft is relative to its nearest positioned ancestor,
-    // which is the wrapper div (position: relative).
     const left = el.offsetLeft;
     const width = el.offsetWidth;
 
@@ -76,18 +102,20 @@ export default function Navbar() {
     pill.style.opacity = "1";
   }, []);
 
-  /* Wait for layout/fonts to settle before positioning pill */
   useEffect(() => {
     if (!mounted) return;
 
     const settle = () => {
-      const idx = hoveredIndex !== null ? hoveredIndex : activeIndex;
+      const idx =
+        hoveredIndex !== null ? hoveredIndex : activeIndex;
+
       movePill(idx);
       setPillReady(true);
     };
 
     const raf1 = requestAnimationFrame(() => {
       const raf2 = requestAnimationFrame(settle);
+
       return () => cancelAnimationFrame(raf2);
     });
 
@@ -101,28 +129,51 @@ export default function Navbar() {
       cancelAnimationFrame(raf1);
       clearTimeout(t);
     };
-  }, [mounted, movePill, hoveredIndex, activeIndex]);
+  }, [
+    mounted,
+    movePill,
+    hoveredIndex,
+    activeIndex,
+  ]);
 
-  /* Reposition on hover/active change */
   useEffect(() => {
     if (!pillReady) return;
-    const idx = hoveredIndex !== null ? hoveredIndex : activeIndex;
+
+    const idx =
+      hoveredIndex !== null ? hoveredIndex : activeIndex;
+
     movePill(idx);
-  }, [hoveredIndex, activeIndex, movePill, pillReady]);
+  }, [
+    hoveredIndex,
+    activeIndex,
+    movePill,
+    pillReady,
+  ]);
 
-  /* Reposition on resize */
   useEffect(() => {
     if (!pillReady) return;
+
     const handle = () => {
-      const idx = hoveredIndex !== null ? hoveredIndex : activeIndex;
+      const idx =
+        hoveredIndex !== null ? hoveredIndex : activeIndex;
+
       movePill(idx);
     };
+
     window.addEventListener("resize", handle);
-    return () => window.removeEventListener("resize", handle);
-  }, [hoveredIndex, activeIndex, movePill, pillReady]);
+
+    return () => {
+      window.removeEventListener("resize", handle);
+    };
+  }, [
+    hoveredIndex,
+    activeIndex,
+    movePill,
+    pillReady,
+  ]);
 
   /* ---------------------------------------------
-     Scroll-spy (unchanged, throttled rAF)
+     Scroll-spy
   --------------------------------------------- */
   useEffect(() => {
     const sections = navItems
@@ -134,14 +185,27 @@ export default function Navbar() {
     let raf = null;
 
     const updateActive = () => {
-      const threshold = window.innerHeight * 0.35;
+      const scrollY = window.scrollY;
+      const viewportH = window.innerHeight;
+      const docH = document.documentElement.scrollHeight;
+
+      // Bottom-of-page override
+      if (scrollY + viewportH >= docH - 4) {
+        setActiveIndex(sections.length - 1);
+        return;
+      }
+
+      const refLine = viewportH * 0.4;
+
       let bestIdx = 0;
       let bestDistance = Infinity;
 
       sections.forEach((section, i) => {
         const rect = section.getBoundingClientRect();
-        if (rect.top <= threshold) {
-          const distance = Math.abs(rect.top - threshold);
+
+        if (rect.top <= refLine) {
+          const distance = Math.abs(rect.top - refLine);
+
           if (distance < bestDistance) {
             bestDistance = distance;
             bestIdx = i;
@@ -149,26 +213,75 @@ export default function Navbar() {
         }
       });
 
-      if (bestDistance === Infinity) bestIdx = 0;
+      if (bestDistance === Infinity) {
+        bestIdx = 0;
+      }
+
       setActiveIndex(bestIdx);
     };
 
     const onScroll = () => {
       if (raf) return;
+
       raf = requestAnimationFrame(() => {
         updateActive();
         raf = null;
       });
     };
 
-    updateActive();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    // Honour URL hash on mount
+    const syncFromHash = () => {
+      const hash = window.location.hash;
+
+      if (!hash) return false;
+
+      const idx = navItems.findIndex(
+        (item) => item.href === hash
+      );
+
+      if (idx === -1) return false;
+
+      setActiveIndex(idx);
+
+      const el = document.querySelector(hash);
+
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({
+            behavior: "auto",
+            block: "start",
+          });
+
+          updateActive();
+        }, 0);
+      }
+
+      return true;
+    };
+
+    const hadHash = syncFromHash();
+
+    if (!hadHash) {
+      updateActive();
+    } else {
+      setTimeout(updateActive, 100);
+    }
+
+    window.addEventListener("scroll", onScroll, {
+      passive: true,
+    });
+
     window.addEventListener("resize", onScroll);
+    window.addEventListener("hashchange", onScroll);
 
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
-      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("hashchange", onScroll);
+
+      if (raf) {
+        cancelAnimationFrame(raf);
+      }
     };
   }, []);
 
@@ -177,6 +290,9 @@ export default function Navbar() {
     setMenuOpen(false);
   };
 
+  /* ---------------------------------------------
+     Entrance animation
+  --------------------------------------------- */
   const entranceStyle = {
     opacity: mounted ? 1 : 0,
     transform: mounted
@@ -194,13 +310,17 @@ export default function Navbar() {
         className="fixed inset-x-0 top-0 z-50 flex justify-center px-4 sm:px-6"
         style={{
           paddingTop: scrolled ? "14px" : "28px",
-          transition: "padding-top 0.4s cubic-bezier(0.22,1,0.36,1)",
+          transition:
+            "padding-top 0.4s cubic-bezier(0.22,1,0.36,1)",
           pointerEvents: "none",
         }}
       >
         <nav
           ref={navRef}
-          style={{ ...entranceStyle, pointerEvents: "auto" }}
+          style={{
+            ...entranceStyle,
+            pointerEvents: "auto",
+          }}
           className={[
             "relative flex items-center justify-between",
             "w-full max-w-[880px]",
@@ -220,31 +340,30 @@ export default function Navbar() {
           <a
             href="#home"
             onClick={() => handleNavClick(0)}
-            className="group flex shrink-0 items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-3"
+            className="group flex shrink-0 items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-3 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5"
           >
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-[13px] font-bold text-white shadow-[0_4px_14px_rgba(59,130,246,0.5)] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-[13px] font-bold text-white shadow-[0_4px_14px_rgba(59,130,246,0.5)] transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-[0_8px_22px_rgba(59,130,246,0.65)]">
               P
             </span>
+
             <span
               className={[
                 "text-[15px] font-semibold tracking-tight",
-                isDark ? "text-white" : "text-slate-900",
+                isDark
+                  ? "text-white"
+                  : "text-slate-900",
               ].join(" ")}
             >
               Portfolio
             </span>
           </a>
 
-          {/* -----------------------------------------
-             Desktop nav links wrapper — position: relative
-             so it becomes the offsetParent for the pill.
-          ----------------------------------------- */}
+          {/* Desktop nav links */}
           <div
             ref={navItemsRef}
             className="relative hidden items-center lg:flex"
             onMouseLeave={() => setHoveredIndex(null)}
           >
-            {/* Shared pill — absolutely positioned INSIDE this wrapper */}
             <span
               ref={pillRef}
               aria-hidden="true"
@@ -252,7 +371,9 @@ export default function Navbar() {
                 "pointer-events-none absolute left-0 top-1/2 -z-0",
                 "h-[38px] -translate-y-1/2 rounded-full",
                 "will-change-transform",
-                isDark ? "bg-white/10" : "bg-slate-900/10",
+                isDark
+                  ? "bg-white/10"
+                  : "bg-slate-900/10",
               ].join(" ")}
               style={{
                 opacity: 0,
@@ -272,9 +393,13 @@ export default function Navbar() {
               return (
                 <a
                   key={item.href}
-                  ref={(el) => (itemRefs.current[i] = el)}
+                  ref={(el) =>
+                    (itemRefs.current[i] = el)
+                  }
                   href={item.href}
-                  onMouseEnter={() => setHoveredIndex(i)}
+                  onMouseEnter={() =>
+                    setHoveredIndex(i)
+                  }
                   onClick={() => handleNavClick(i)}
                   className={[
                     "relative z-10 whitespace-nowrap rounded-full",
@@ -294,8 +419,11 @@ export default function Navbar() {
                   style={{
                     transition:
                       "color 200ms ease, transform 250ms cubic-bezier(0.34,1.56,0.64,1)",
-                    transformOrigin: "center center",
-                    transform: isHovered ? "scale(1.05)" : "scale(1)",
+                    transformOrigin:
+                      "center center",
+                    transform: isHovered
+                      ? "scale(1.05)"
+                      : "scale(1)",
                   }}
                 >
                   {item.label}
@@ -306,13 +434,19 @@ export default function Navbar() {
 
           {/* Right controls */}
           <div className="flex shrink-0 items-center gap-1.5">
+            {/* Theme button */}
             <button
               type="button"
               onClick={toggleTheme}
-              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label={
+                isDark
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
               className={[
                 "relative grid h-9 w-9 place-items-center rounded-full",
-                "transition-all duration-300",
+                "transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                "hover:-translate-y-0.5 hover:scale-105",
                 "focus-visible:outline-none focus-visible:ring-2",
                 isDark
                   ? "text-slate-300 hover:bg-white/10 hover:text-white focus-visible:ring-blue-400/60"
@@ -321,20 +455,36 @@ export default function Navbar() {
             >
               <span
                 className="grid place-items-center transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                style={{ transform: isDark ? "rotate(0deg)" : "rotate(180deg)" }}
+                style={{
+                  transform: isDark
+                    ? "rotate(0deg)"
+                    : "rotate(180deg)",
+                }}
               >
-                {isDark ? <Moon size={17} /> : <Sun size={17} />}
+                {isDark ? (
+                  <Moon size={17} />
+                ) : (
+                  <Sun size={17} />
+                )}
               </span>
             </button>
 
+            {/* Mobile menu */}
             <button
               type="button"
-              onClick={() => setMenuOpen((c) => !c)}
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              onClick={() =>
+                setMenuOpen((current) => !current)
+              }
+              aria-label={
+                menuOpen
+                  ? "Close menu"
+                  : "Open menu"
+              }
               aria-expanded={menuOpen}
               className={[
                 "grid h-9 w-9 place-items-center rounded-full lg:hidden",
-                "transition-all duration-300",
+                "transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                "hover:-translate-y-0.5 hover:scale-105",
                 "focus-visible:outline-none focus-visible:ring-2",
                 isDark
                   ? "text-slate-300 hover:bg-white/10 hover:text-white focus-visible:ring-blue-400/60"
@@ -343,9 +493,17 @@ export default function Navbar() {
             >
               <span
                 className="grid place-items-center transition-transform duration-300"
-                style={{ transform: menuOpen ? "rotate(90deg)" : "rotate(0deg)" }}
+                style={{
+                  transform: menuOpen
+                    ? "rotate(90deg)"
+                    : "rotate(0deg)",
+                }}
               >
-                {menuOpen ? <X size={19} /> : <Menu size={19} />}
+                {menuOpen ? (
+                  <X size={19} />
+                ) : (
+                  <Menu size={19} />
+                )}
               </span>
             </button>
           </div>
@@ -355,7 +513,7 @@ export default function Navbar() {
             className={[
               "absolute left-0 right-0 top-[calc(100%+10px)] lg:hidden",
               "overflow-hidden rounded-3xl",
-              "transition-all duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
               isDark
                 ? "bg-slate-900/95 border border-white/10"
                 : "bg-white/95 border border-slate-200/80",
@@ -377,10 +535,13 @@ export default function Navbar() {
                 <a
                   key={item.href}
                   href={item.href}
-                  onClick={() => handleNavClick(i)}
+                  onClick={() =>
+                    handleNavClick(i)
+                  }
                   className={[
                     "rounded-2xl px-4 py-3 text-sm font-medium",
-                    "transition-all duration-200",
+                    "transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                    "hover:-translate-y-0.5 hover:scale-[1.02]",
                     activeIndex === i
                       ? isDark
                         ? "bg-white/10 text-white"
@@ -389,6 +550,21 @@ export default function Navbar() {
                       ? "text-slate-300 hover:bg-white/5 hover:text-white"
                       : "text-slate-600 hover:bg-slate-900/5 hover:text-slate-900",
                   ].join(" ")}
+                  style={{
+                    opacity: menuOpen ? 1 : 0,
+                    transform: menuOpen
+                      ? "translateY(0)"
+                      : "translateY(-8px)",
+                    transition: `opacity 400ms cubic-bezier(0.22,1,0.36,1) ${
+                      menuOpen
+                        ? 120 + i * 40
+                        : 0
+                    }ms, transform 400ms cubic-bezier(0.22,1,0.36,1) ${
+                      menuOpen
+                        ? 120 + i * 40
+                        : 0
+                    }ms, background-color 250ms ease, color 250ms ease`,
+                  }}
                 >
                   {item.label}
                 </a>

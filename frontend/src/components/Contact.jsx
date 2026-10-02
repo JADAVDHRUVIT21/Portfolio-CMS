@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
-import { Mail, Send, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { Mail, Send, CheckCircle2, AlertCircle, X, Loader2 } from "lucide-react";
 import { Reveal } from "./Hero";
-
-/* ⚠️ Replace with your real email */
-const FORM_ENDPOINT = "https://formsubmit.co/ajax/dhruvit715@gmail.com";
+import api from "../services/api"; // ✅ use your existing API service
 
 export default function Contact() {
   const [form, setForm] = useState({
@@ -13,15 +11,11 @@ export default function Contact() {
     message: "",
   });
 
-  const [status, setStatus] = useState({
-    type: "",
-    message: "",
-  });
-
+  const [status, setStatus] = useState({ type: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState(null); // { type, message }
+  const [toast, setToast] = useState(null);
 
-  /* Auto-dismiss toast after 3.5s */
+  /* Auto-dismiss toast */
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 3500);
@@ -30,81 +24,41 @@ export default function Contact() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-    }));
+    setForm((current) => ({ ...current, [name]: value }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     setSubmitting(true);
     setStatus({ type: "", message: "" });
 
     try {
-      // FormSubmit AJAX endpoint
-      const response = await fetch(FORM_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          subject: form.subject,
-          message: form.message,
-
-          /* --- FormSubmit extras --- */
-          _subject: `Portfolio Contact: ${form.subject}`,
-          _captcha: "false",
-          _template: "table",
-          // So when you hit "Reply" in Gmail, it goes to the sender:
-          _replyto: form.email,
-          // Optional auto-response to the sender (only works if you enable
-          // "Autoresponse" in your FormSubmit dashboard — see notes below)
-          _autoresponse:
-            `Hi ${form.name},\n\nThanks for reaching out! I've received your message and will get back to you soon.\n\n— Dhruvit Jadav`,
-        }),
+      // ✅ POST to YOUR backend — backend saves to DB + sends email
+      const response = await api.post("/contact", {
+        name: form.name,
+        email: form.email,
+        subject: form.subject,
+        message: form.message,
       });
 
-      const data = await response.json();
-
-      if (!response.ok || data.success === "false") {
-        throw new Error(data.message || "Failed to send");
-      }
-
-      // Success — clear the form
-      setForm({
-        name: "",
-        email: "",
-        subject: "",
-        message: "",
-      });
-
+      // ✅ Success
+      setForm({ name: "", email: "", subject: "", message: "" });
       setStatus({
         type: "success",
         message: "Your message has been sent successfully.",
       });
-
       setToast({
         type: "success",
         message: "Mail sent successfully!",
       });
     } catch (err) {
       console.error("Failed to send contact message:", err);
+      const errorMsg =
+        err.response?.data?.detail ||
+        "Unable to send your message right now.";
 
-      setStatus({
-        type: "error",
-        message: "Unable to send your message right now.",
-      });
-
-      setToast({
-        type: "error",
-        message: "Failed to send mail. Please try again.",
-      });
+      setStatus({ type: "error", message: errorMsg });
+      setToast({ type: "error", message: "Failed to send mail. Please try again." });
     } finally {
       setSubmitting(false);
     }
@@ -117,12 +71,7 @@ export default function Contact() {
         <div
           role="status"
           aria-live="polite"
-          className="
-            fixed left-1/2 top-6 z-[200]
-            -translate-x-1/2
-            w-[calc(100%-2rem)] max-w-md
-            animate-[toastIn_320ms_cubic-bezier(0.22,1,0.36,1)]
-          "
+          className="fixed left-1/2 top-6 z-[200] -translate-x-1/2 w-[calc(100%-2rem)] max-w-md animate-[toastIn_320ms_cubic-bezier(0.22,1,0.36,1)]"
         >
           <div
             className={[
@@ -141,31 +90,21 @@ export default function Contact() {
                   : "bg-red-500/15 text-red-600 dark:text-red-400",
               ].join(" ")}
             >
-              {toast.type === "success" ? (
-                <CheckCircle2 size={18} />
-              ) : (
-                <AlertCircle size={18} />
-              )}
+              {toast.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
             </span>
 
             <div className="flex-1">
               <p className="text-sm font-semibold">
                 {toast.type === "success" ? "Success" : "Error"}
               </p>
-              <p className="mt-0.5 text-xs opacity-90">
-                {toast.message}
-              </p>
+              <p className="mt-0.5 text-xs opacity-90">{toast.message}</p>
             </div>
 
             <button
               type="button"
               onClick={() => setToast(null)}
               aria-label="Dismiss notification"
-              className="
-                grid h-7 w-7 shrink-0 place-items-center rounded-full
-                opacity-60 transition hover:opacity-100 hover:bg-black/5
-                dark:hover:bg-white/10
-              "
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-full opacity-60 transition hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10"
             >
               <X size={14} />
             </button>
@@ -176,12 +115,7 @@ export default function Contact() {
       {/* ---------- Contact Section ---------- */}
       <section
         id="contact"
-        className="
-          scroll-mt-24 px-6 py-24 sm:px-8 lg:py-32
-          bg-slate-50 text-slate-900
-          dark:bg-slate-950 dark:text-white
-          transition-colors duration-300
-        "
+        className="scroll-mt-24 px-6 py-24 sm:px-8 lg:py-32 bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white transition-colors duration-300"
       >
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
@@ -208,26 +142,14 @@ export default function Contact() {
 
               <Reveal delay={360} y={20}>
                 <div className="mt-8 flex items-center gap-4">
-                  <div
-                    className="
-                      flex h-12 w-12 items-center justify-center rounded-xl
-                      bg-blue-100 text-blue-600
-                      dark:bg-blue-600/20 dark:text-blue-400
-                      transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]
-                      hover:scale-110 hover:rotate-3
-                      hover:bg-blue-500 hover:text-white
-                      hover:shadow-[0_8px_20px_rgba(37,99,235,0.45)]
-                    "
-                  >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400 transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110 hover:rotate-3 hover:bg-blue-500 hover:text-white hover:shadow-[0_8px_20px_rgba(37,99,235,0.45)]">
                     <Mail size={22} />
                   </div>
 
                   <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Get in touch
-                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Get in touch</p>
                     <p className="mt-1 font-medium text-slate-900 dark:text-white">
-                        dhruvit715@gmail.com
+                      dhruvit715@gmail.com
                     </p>
                     <p className="mt-1 font-medium text-slate-900 dark:text-white">
                       Send a Mail using the form
@@ -241,34 +163,18 @@ export default function Contact() {
             <Reveal delay={180} y={34}>
               <form
                 onSubmit={handleSubmit}
-                className="
-                  group relative overflow-hidden rounded-3xl border p-6 shadow-xl sm:p-8
-                  border-slate-200 bg-white
-                  dark:border-slate-800 dark:bg-slate-900 dark:shadow-2xl
-                  transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]
-                  hover:shadow-[0_30px_60px_-25px_rgba(37,99,235,0.35)]
-                  dark:hover:shadow-[0_30px_60px_-25px_rgba(59,130,246,0.45)]
-                "
+                className="group relative overflow-hidden rounded-3xl border p-6 shadow-xl sm:p-8 border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 dark:shadow-2xl transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:shadow-[0_30px_60px_-25px_rgba(37,99,235,0.35)] dark:hover:shadow-[0_30px_60px_-25px_rgba(59,130,246,0.45)]"
               >
                 <span
                   aria-hidden="true"
-                  className="
-                    pointer-events-none absolute inset-x-0 top-0 h-[2px]
-                    bg-gradient-to-r from-blue-500/0 via-blue-500 to-indigo-500/0
-                    opacity-0 transition-opacity duration-500
-                    group-hover:opacity-100
-                  "
+                  className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500 to-indigo-500/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                 />
 
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div>
-                    <label
-                      htmlFor="name"
-                      className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                    >
+                    <label htmlFor="name" className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                       Name
                     </label>
-
                     <input
                       id="name"
                       name="name"
@@ -276,25 +182,16 @@ export default function Contact() {
                       value={form.name}
                       onChange={handleChange}
                       required
-                      className="
-                        w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300
-                        border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
-                        focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)]
-                        dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500
-                        dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]
-                      "
+                      disabled={submitting}
+                      className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)] dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)] disabled:opacity-60"
                       placeholder="Your name"
                     />
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="email"
-                      className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                    >
+                    <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                       Email
                     </label>
-
                     <input
                       id="email"
                       name="email"
@@ -302,26 +199,17 @@ export default function Contact() {
                       value={form.email}
                       onChange={handleChange}
                       required
-                      className="
-                        w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300
-                        border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
-                        focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)]
-                        dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500
-                        dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]
-                      "
+                      disabled={submitting}
+                      className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)] dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)] disabled:opacity-60"
                       placeholder="you@example.com"
                     />
                   </div>
                 </div>
 
                 <div className="mt-5">
-                  <label
-                    htmlFor="subject"
-                    className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                  >
+                  <label htmlFor="subject" className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Subject
                   </label>
-
                   <input
                     id="subject"
                     name="subject"
@@ -329,63 +217,60 @@ export default function Contact() {
                     value={form.subject}
                     onChange={handleChange}
                     required
-                    className="
-                      w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300
-                      border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
-                      focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)]
-                      dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500
-                      dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]
-                    "
+                    disabled={submitting}
+                    className="w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)] dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)] disabled:opacity-60"
                     placeholder="Project inquiry"
                   />
                 </div>
 
                 <div className="mt-5">
-                  <label
-                    htmlFor="message"
-                    className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                  >
+                  <label htmlFor="message" className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Message
                   </label>
-
                   <textarea
                     id="message"
                     name="message"
                     value={form.message}
                     onChange={handleChange}
                     required
+                    disabled={submitting}
                     rows={6}
-                    className="
-                      w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300
-                      border-slate-300 bg-white text-slate-900 placeholder:text-slate-400
-                      focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)]
-                      dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500
-                      dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)]
-                    "
+                    className="w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition-all duration-300 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.15)] dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-500 dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)] disabled:opacity-60"
                     placeholder="Tell me about your project..."
                   />
                 </div>
 
+                {/* Status message */}
+                {status.message && (
+                  <div
+                    className={`mt-5 rounded-xl border px-4 py-3 text-sm font-medium ${
+                      status.type === "success"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-950/40 dark:text-emerald-300"
+                        : "border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-950/40 dark:text-red-300"
+                    }`}
+                  >
+                    {status.message}
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="
-                    group/btn mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl
-                    bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white
-                    transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]
-                    hover:bg-blue-500 hover:-translate-y-0.5
-                    hover:shadow-[0_15px_35px_-12px_rgba(37,99,235,0.7)]
-                    disabled:cursor-not-allowed disabled:opacity-60
-                    disabled:hover:translate-y-0 disabled:hover:shadow-none
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400
-                  "
+                  className="group/btn mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-blue-500 hover:-translate-y-0.5 hover:shadow-[0_15px_35px_-12px_rgba(37,99,235,0.7)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 >
-                  {submitting ? "Sending..." : "Send Message"}
-                  {!submitting && (
-                    <Send
-                      size={17}
-                      className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5"
-                    />
+                  {submitting ? (
+                    <>
+                      <Loader2 size={17} className="animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      Send Message
+                      <Send
+                        size={17}
+                        className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5"
+                      />
+                    </>
                   )}
                 </button>
               </form>

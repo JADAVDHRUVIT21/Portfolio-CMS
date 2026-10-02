@@ -42,6 +42,13 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // =========================================================
+  // NEW: Update user in global state (called after profile edit)
+  // =========================================================
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -49,6 +56,7 @@ export function AuthProvider({ children }) {
         loading,
         login,
         logout,
+        updateUser, // <-- Exposed to all consumers
         isAuthenticated: !!user,
         isAdmin: user?.is_admin === true,
       }}

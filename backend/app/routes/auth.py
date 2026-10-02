@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
+from pydantic import BaseModel, EmailStr, Field
 
 from app.core.database import get_db
 from app.core.security import (
@@ -27,6 +28,24 @@ router = APIRouter(
     tags=["Authentication"]
 )
 
+
+# =========================================================
+# SCHEMAS (for the new endpoints)
+# =========================================================
+
+class UpdateProfileRequest(BaseModel):
+    full_name: str = Field(..., min_length=1, max_length=120)
+    email: EmailStr
+
+
+class UpdatePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=6, max_length=128)
+
+
+# =========================================================
+# EXISTING ENDPOINTS
+# =========================================================
 
 @router.post(
     "/register",
@@ -177,3 +196,85 @@ def get_me(
     current_user: User = Depends(get_current_user)
 ):
     return current_user
+
+
+# =========================================================
+# NEW: UPDATE PROFILE (name + email)
+# =========================================================
+
+@router.put(
+    "/me",
+    response_model=UserResponse,
+)
+def update_me(
+    data: UpdateProfileRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Check if the new email is already taken by another user
+    if data.email.lower() != current_user.email.lower():
+        existing = (
+            db.query(User)
+            .filter(User.email == data.email.lower())
+            .filter(User.id != current_user.id)
+            .first()
+        )
+
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="That email is already in use",
+            )
+
+    # Update fields
+    current_user.full_name = data.full_name.strip()
+    current_user.email = data.email.lower().strip()
+
+    db.commit()
+    db.refresh(current_user)
+
+    return current_user
+
+
+# =========================================================
+# NEW: CHANGE PASSWORD
+# =========================================================
+
+@router.put(
+    "/me/password",
+    status_code=status.HTTP_200_OK,
+)
+def update_my_password(
+    data: UpdatePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Verify current password
+    if not verify_password(
+        data.current_password,
+        current_user.password_hash,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+
+    # Prevent reusing the same password
+    if verify_password(
+        data.new_password,
+        current_user.password_hash,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from the current one",
+        )
+
+    # Save new password
+    current_user.password_hash = hash_password(data.new_password)
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {
+        "message": "Password updated successfully"
+    }

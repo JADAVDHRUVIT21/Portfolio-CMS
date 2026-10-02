@@ -1,5 +1,6 @@
 from app.models.user import User
 from app.models.about import About
+from app.models.about_card import AboutCard
 from app.models.skill import Skill
 from app.models.project import Project
 from app.models.blog import Blog

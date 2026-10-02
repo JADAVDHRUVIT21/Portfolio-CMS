@@ -11,6 +11,7 @@ import "./index.css";
 
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
+import { UnreadProvider } from "./context/UnreadContext"; // <-- 1. Import it here
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AdminLayout from "./layouts/AdminLayout";
@@ -25,7 +26,7 @@ import Experience from "./pages/Experience";
 import Testimonials from "./pages/Testimonials";
 import Services from "./pages/Services";
 import Messages from "./pages/Messages";
-import Media from "./pages/Media";
+import Account from "./pages/Account";
 
 ReactDOM.createRoot(
   document.getElementById("root")
@@ -34,91 +35,94 @@ ReactDOM.createRoot(
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
-          <Routes>
+          <UnreadProvider> {/* <-- 2. Wrap here */}
+            <Routes>
 
-            {/* Login */}
-            <Route
-              path="/login"
-              element={<Login />}
-            />
-
-            {/* Protected Admin Panel */}
-            <Route element={<ProtectedRoute />}>
+              {/* Login */}
               <Route
-                path="/dashboard"
-                element={<AdminLayout />}
-              >
+                path="/login"
+                element={<Login />}
+              />
 
-                {/* Dashboard */}
+              {/* Protected Admin Panel */}
+              <Route element={<ProtectedRoute />}>
                 <Route
-                  index
-                  element={<Dashboard />}
-                />
+                  path="/dashboard"
+                  element={<AdminLayout />}
+                >
 
-                {/* About */}
-                <Route
-                  path="about"
-                  element={<About />}
-                />
+                  {/* Dashboard */}
+                  <Route
+                    index
+                    element={<Dashboard />}
+                  />
 
-                {/* Skills */}
-                <Route
-                  path="skills"
-                  element={<Skills />}
-                />
+                  {/* About */}
+                  <Route
+                    path="about"
+                    element={<About />}
+                  />
 
-                {/* Projects */}
-                <Route
-                  path="projects"
-                  element={<Projects />}
-                />
+                  {/* Skills */}
+                  <Route
+                    path="skills"
+                    element={<Skills />}
+                  />
 
-                {/* Blogs */}
-                <Route
-                  path="blogs"
-                  element={<Blogs />}
-                />
+                  {/* Projects */}
+                  <Route
+                    path="projects"
+                    element={<Projects />}
+                  />
 
-                {/* Experience */}
-                <Route
-                  path="experience"
-                  element={<Experience />}
-                />
-                {/* Testimonials */}
-                <Route
-                  path="testimonials"
-                  element={<Testimonials />}
-                />
-                {/* Services */}
-                <Route
-                  path="services"
-                  element={<Services />}
-                />
-                {/* Messages */}
-                <Route
-                  path="messages"
-                  element={<Messages />}
-                />
-                {/* Media */}
-                <Route
-                  path="media"
-                  element={<Media />}
-                />
+                  {/* Blogs */}
+                  <Route
+                    path="blogs"
+                    element={<Blogs />}
+                  />
+
+                  {/* Experience */}
+                  <Route
+                    path="experience"
+                    element={<Experience />}
+                  />
+                  {/* Testimonials */}
+                  <Route
+                    path="testimonials"
+                    element={<Testimonials />}
+                  />
+                  {/* Services */}
+                  <Route
+                    path="services"
+                    element={<Services />}
+                  />
+                  {/* Messages */}
+                  <Route
+                    path="messages"
+                    element={<Messages />}
+                  />
+                  {/* Account */}
+                  <Route
+                    path="account"
+                    element={<Account />}
+                  />
+
+                </Route>
               </Route>
-            </Route>
 
-            {/* Fallback */}
-            <Route
-              path="*"
-              element={
-                <Navigate
-                  to="/dashboard"
-                  replace
-                />
-              }
-            />
+              {/* Fallback */}
+              <Route
+                path="*"
+                element={
+                  <Navigate
+                    to="/dashboard"
+                    replace
+                  />
+                }
+              />
 
-          </Routes>
+            </Routes>
+          </UnreadProvider> {/* <-- 3. Close it here */}
         </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>

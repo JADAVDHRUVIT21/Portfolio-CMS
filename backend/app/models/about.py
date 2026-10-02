@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import String, Text, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
-from datetime import datetime, timezone
 
 from app.core.database import Base
 
@@ -8,7 +9,10 @@ from app.core.database import Base
 class About(Base):
     __tablename__ = "about"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True
+    )
 
     title: Mapped[str] = mapped_column(
         String(150),
@@ -20,7 +24,7 @@ class About(Base):
         nullable=False
     )
 
-    long_description: Mapped[str] = mapped_column(
+    long_description: Mapped[str | None] = mapped_column(
         Text,
         nullable=True
     )
@@ -30,6 +34,8 @@ class About(Base):
         nullable=True
     )
 
+    # Kept in the database for backward compatibility.
+    # They are no longer used by the About admin form/API.
     location: Mapped[str | None] = mapped_column(
         String(150),
         nullable=True
@@ -51,4 +57,3 @@ class About(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False
     )
-    

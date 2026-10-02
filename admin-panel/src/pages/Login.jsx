@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import { LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { LockKeyhole, Mail, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -15,6 +15,8 @@ export default function Login() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [splash, setSplash] = useState(false);
+  const [splashSuccess, setSplashSuccess] = useState(false);
 
   const handleChange = (event) => {
     setForm({
@@ -25,153 +27,345 @@ export default function Login() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     setError("");
     setLoading(true);
+    setSplash(true);
 
     try {
       const response = await api.post("/auth/login", form);
-
-      const {
-        access_token,
-        refresh_token,
-      } = response.data;
+      const { access_token, refresh_token } = response.data;
 
       const userResponse = await api.get("/auth/me", {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-        },
+        headers: { Authorization: `Bearer ${access_token}` },
       });
 
       const user = userResponse.data;
 
       if (!user.is_admin) {
         setError("Admin access is required.");
+        setLoading(false);
+        setSplash(false);
         return;
       }
 
-      login(
-        access_token,
-        refresh_token,
-        user
-      );
+      login(access_token, refresh_token, user);
+      setSplashSuccess(true);
 
-      navigate("/dashboard");
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1400);
+
     } catch (err) {
       setError(
-        err.response?.data?.detail ||
-        "Invalid email or password."
+        err.response?.data?.detail || "Invalid email or password."
       );
-    } finally {
       setLoading(false);
+      setSplash(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-          <div className="bg-slate-950 px-8 py-8 text-white">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-white/10 flex items-center justify-center">
-                <ShieldCheck size={24} />
-              </div>
+    <div className="min-h-screen relative flex items-center justify-center px-4 py-8 overflow-hidden bg-[#050510]">
 
-              <div>
-                <p className="text-sm text-slate-300">
-                  Portfolio CMS
-                </p>
+      {/* ==================== MOVING COLOR BACKGROUND ==================== */}
+      <style>{`
+        /* Continuous flowing motion for each orb */
+        @keyframes flow1 {
+          0%   { transform: translate(-20%, -20%) scale(1); }
+          25%  { transform: translate(60%, -10%) scale(1.2); }
+          50%  { transform: translate(40%, 60%) scale(0.9); }
+          75%  { transform: translate(-10%, 50%) scale(1.1); }
+          100% { transform: translate(-20%, -20%) scale(1); }
+        }
+        @keyframes flow2 {
+          0%   { transform: translate(80%, 80%) scale(1); }
+          25%  { transform: translate(10%, 60%) scale(1.15); }
+          50%  { transform: translate(-20%, 20%) scale(0.95); }
+          75%  { transform: translate(40%, -10%) scale(1.1); }
+          100% { transform: translate(80%, 80%) scale(1); }
+        }
+        @keyframes flow3 {
+          0%   { transform: translate(50%, -30%) scale(1); }
+          33%  { transform: translate(-20%, 30%) scale(1.25); }
+          66%  { transform: translate(70%, 20%) scale(0.85); }
+          100% { transform: translate(50%, -30%) scale(1); }
+        }
+        @keyframes flow4 {
+          0%   { transform: translate(-30%, 70%) scale(1); }
+          33%  { transform: translate(50%, 40%) scale(1.1); }
+          66%  { transform: translate(20%, -20%) scale(0.9); }
+          100% { transform: translate(-30%, 70%) scale(1); }
+        }
+        @keyframes flow5 {
+          0%   { transform: translate(30%, 30%) scale(1); }
+          50%  { transform: translate(-40%, -30%) scale(1.3); }
+          100% { transform: translate(30%, 30%) scale(1); }
+        }
 
-                <h1 className="text-2xl font-bold">
-                  Admin Panel
-                </h1>
-              </div>
+        /* Color shifting - makes each orb cycle through hues */
+        @keyframes hueShift {
+          0%   { filter: blur(140px) hue-rotate(0deg); }
+          50%  { filter: blur(140px) hue-rotate(180deg); }
+          100% { filter: blur(140px) hue-rotate(360deg); }
+        }
+        @keyframes hueShiftReverse {
+          0%   { filter: blur(140px) hue-rotate(360deg); }
+          50%  { filter: blur(140px) hue-rotate(180deg); }
+          100% { filter: blur(140px) hue-rotate(0deg); }
+        }
+        @keyframes hueShiftSlow {
+          0%   { filter: blur(150px) hue-rotate(0deg); }
+          100% { filter: blur(150px) hue-rotate(360deg); }
+        }
+
+        .orb-1 { 
+          animation: flow1 18s ease-in-out infinite, hueShift 12s linear infinite; 
+        }
+        .orb-2 { 
+          animation: flow2 22s ease-in-out infinite, hueShiftReverse 15s linear infinite; 
+        }
+        .orb-3 { 
+          animation: flow3 20s ease-in-out infinite, hueShift 18s linear infinite; 
+        }
+        .orb-4 { 
+          animation: flow4 25s ease-in-out infinite, hueShiftReverse 20s linear infinite; 
+        }
+        .orb-5 { 
+          animation: flow5 16s ease-in-out infinite, hueShiftSlow 25s linear infinite; 
+        }
+
+        /* Grain texture */
+        @keyframes grain {
+          0%, 100% { transform: translate(0, 0); }
+          10% { transform: translate(-5%, -5%); }
+          20% { transform: translate(-10%, 5%); }
+          30% { transform: translate(5%, -10%); }
+          40% { transform: translate(-5%, 15%); }
+          50% { transform: translate(-10%, 5%); }
+          60% { transform: translate(15%, 0); }
+          70% { transform: translate(0, 10%); }
+          80% { transform: translate(-15%, 0); }
+          90% { transform: translate(10%, 5%); }
+        }
+        .grain-overlay { animation: grain 8s steps(10) infinite; }
+
+        /* Splash animations */
+        @keyframes splashRing {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .splash-ring { animation: splashRing 1s linear infinite; }
+
+        @keyframes splashCheck {
+          0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+          50% { transform: scale(1.2) rotate(-45deg); }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .splash-check { animation: splashCheck 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes splashFadeIn {
+          from { opacity: 0; backdrop-filter: blur(0px); }
+          to { opacity: 1; backdrop-filter: blur(40px); }
+        }
+        .splash-enter { animation: splashFadeIn 0.5s ease-out forwards; }
+
+        @keyframes pulseGlow {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+      `}</style>
+
+      {/* Moving Color Orbs */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-[60%] h-[60%] rounded-full bg-blue-600/50 orb-1" />
+        <div className="absolute bottom-0 right-0 w-[65%] h-[65%] rounded-full bg-indigo-600/45 orb-2" />
+        <div className="absolute top-[20%] right-0 w-[55%] h-[55%] rounded-full bg-purple-600/40 orb-3" />
+        <div className="absolute bottom-[10%] left-0 w-[55%] h-[55%] rounded-full bg-cyan-500/35 orb-4" />
+        <div className="absolute top-[40%] left-[30%] w-[45%] h-[45%] rounded-full bg-pink-500/25 orb-5" />
+      </div>
+
+      {/* Grain Texture */}
+      <div 
+        className="absolute inset-0 opacity-[0.04] grain-overlay pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          backgroundSize: '200px 200px'
+        }}
+      />
+
+      {/* Vignette for cinematic depth */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40 pointer-events-none" />
+
+
+      {/* ==================== LOGIN FORM ==================== */}
+      <div className={`w-full max-w-[420px] relative z-10 transition-all duration-700 ${
+        splash ? 'opacity-0 scale-95 blur-md pointer-events-none' : 'opacity-100 scale-100 blur-0'
+      }`}>
+        
+        {/* Glass Card */}
+        <div className="bg-white/[0.08] backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_60px_rgb(0,0,0,0.5)] border border-white/10 overflow-hidden">
+          
+          {/* Header */}
+          <div className="px-8 pt-10 pb-6 text-center">
+            <div className="mx-auto w-16 h-16 rounded-[1.25rem] bg-gradient-to-br from-white/20 to-white/5 border border-white/20 flex items-center justify-center shadow-lg mb-5">
+              <ShieldCheck size={30} className="text-white" strokeWidth={1.5} />
             </div>
-
-            <p className="mt-5 text-sm text-slate-300 leading-6">
-              Sign in to manage your portfolio content,
-              projects, blogs, services and messages.
+            
+            <h1 className="text-2xl font-semibold tracking-tight text-white">
+              Admin Panel
+            </h1>
+            <p className="mt-2 text-sm text-white/50 font-medium tracking-tight">
+              Sign in to manage your portfolio
             </p>
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="p-8 space-y-5"
-          >
+          <form onSubmit={handleSubmit} className="px-8 pb-10 space-y-5">
             {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              <div className="rounded-2xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-300 font-medium flex items-center gap-2 backdrop-blur-sm">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
                 {error}
               </div>
             )}
 
-            <div>
+            {/* Email */}
+            <div className="space-y-1.5">
               <label
                 htmlFor="email"
-                className="block text-sm font-semibold text-slate-700 mb-2"
+                className="block text-xs font-semibold text-white/50 uppercase tracking-wider ml-1"
               >
                 Email
               </label>
-
-              <div className="relative">
+              <div className="relative group">
                 <Mail
                   size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-white transition-colors"
                 />
-
                 <input
                   id="email"
                   name="email"
                   type="email"
                   value={form.email}
                   onChange={handleChange}
-                  placeholder="Enter your email"
+                  placeholder="name@example.com"
                   required
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3.5 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  disabled={loading}
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.06] pl-11 pr-4 py-3.5 text-[15px] text-white placeholder:text-white/30 outline-none transition-all duration-200 focus:bg-white/[0.1] focus:border-white/30 focus:ring-4 focus:ring-white/5 disabled:opacity-50"
                 />
               </div>
             </div>
 
-            <div>
+            {/* Password */}
+            <div className="space-y-1.5">
               <label
                 htmlFor="password"
-                className="block text-sm font-semibold text-slate-700 mb-2"
+                className="block text-xs font-semibold text-white/50 uppercase tracking-wider ml-1"
               >
                 Password
               </label>
-
-              <div className="relative">
+              <div className="relative group">
                 <LockKeyhole
                   size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-white transition-colors"
                 />
-
                 <input
                   id="password"
                   name="password"
                   type="password"
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="Enter your password"
+                  placeholder="••••••••"
                   required
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 py-3.5 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  disabled={loading}
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.06] pl-11 pr-4 py-3.5 text-[15px] text-white placeholder:text-white/30 outline-none transition-all duration-200 focus:bg-white/[0.1] focus:border-white/30 focus:ring-4 focus:ring-white/5 disabled:opacity-50"
                 />
               </div>
             </div>
 
+            {/* Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-blue-600 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-2xl bg-white text-slate-900 px-4 py-4 text-[15px] font-semibold shadow-lg shadow-white/10 transition-all duration-300 hover:bg-white/90 hover:shadow-white/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 flex items-center justify-center gap-2 mt-2 relative overflow-hidden group"
             >
-              {loading ? "Signing in..." : "Sign in"}
+              <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-slate-900/10 to-transparent" />
+              Sign in
             </button>
           </form>
         </div>
 
-        <p className="text-center text-xs text-slate-500 mt-5">
+        <p className="text-center text-[11px] font-medium text-white/30 mt-6 tracking-wide uppercase">
           Secure Portfolio CMS Administration
         </p>
       </div>
+
+
+      {/* ==================== FULL-PAGE SPLASH SCREEN ==================== */}
+      {splash && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center splash-enter bg-[#050510]/80 backdrop-blur-3xl">
+          
+          <div className={`absolute w-[500px] h-[500px] rounded-full blur-[120px] transition-colors duration-700 ${
+            splashSuccess ? 'bg-green-500/30' : 'bg-blue-500/30'
+          } pulse-glow`} />
+
+          <div className="relative z-10 flex flex-col items-center">
+            
+            <div className="relative w-24 h-24 flex items-center justify-center">
+              {!splashSuccess ? (
+                <>
+                  <div className="absolute inset-0 rounded-full border-[3px] border-white/10" />
+                  <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-white splash-ring" />
+                  <div className="absolute inset-2 rounded-full border-[2px] border-transparent border-t-white/40 splash-ring" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }} />
+                  
+                  <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-sm">
+                    <ShieldCheck size={26} className="text-white" strokeWidth={1.5} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="absolute inset-0 rounded-full border-[3px] border-green-400/30" />
+                  <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-green-400" />
+                  
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/40">
+                    <CheckCircle2 size={28} className="text-white splash-check" strokeWidth={2.5} />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="mt-8 text-center">
+              <h2 className={`text-xl font-semibold tracking-tight transition-colors duration-500 ${
+                splashSuccess ? 'text-green-400' : 'text-white'
+              }`}>
+                {splashSuccess ? 'Welcome back!' : 'Signing in...'}
+              </h2>
+              <p className="mt-2 text-sm text-white/40 font-medium">
+                {splashSuccess ? 'Redirecting to dashboard' : 'Verifying your credentials'}
+              </p>
+
+              {!splashSuccess && (
+                <div className="flex items-center justify-center gap-1.5 mt-5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              )}
+
+              <div className="mt-6 w-48 h-1 rounded-full bg-white/10 overflow-hidden mx-auto">
+                <div 
+                  className={`h-full rounded-full transition-all duration-[1400ms] ease-out ${
+                    splashSuccess ? 'bg-green-400' : 'bg-white/60'
+                  }`}
+                  style={{
+                    width: splashSuccess ? '100%' : '66%',
+                    transition: 'width 1.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

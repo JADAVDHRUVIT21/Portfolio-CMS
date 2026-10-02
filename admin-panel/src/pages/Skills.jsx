@@ -7,6 +7,7 @@ import {
   X,
   Save,
   RefreshCw,
+  Image as ImageIcon,
 } from "lucide-react";
 
 import api from "../services/api";
@@ -15,6 +16,7 @@ import { useNotification } from "../context/NotificationContext";
 const initialForm = {
   name: "",
   category: "",
+  icon: "", // <-- ADDED: Icon URL or Lucide name
   proficiency: 0,
   display_order: 0,
   is_published: true,
@@ -72,6 +74,7 @@ export default function Skills() {
     setForm({
       name: skill.name || "",
       category: skill.category || "",
+      icon: skill.icon || "", // <-- ADDED
       proficiency: skill.proficiency ?? 0,
       display_order: skill.display_order ?? 0,
       is_published:
@@ -144,6 +147,7 @@ export default function Skills() {
       const payload = {
         name: form.name.trim(),
         category: form.category.trim(),
+        icon: form.icon.trim(), // <-- ADDED
         proficiency,
         display_order: displayOrder,
         is_published: form.is_published,
@@ -282,7 +286,7 @@ export default function Skills() {
           <>
             {/* Desktop Table */}
             <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[760px]">
+              <table className="w-full min-w-[820px]">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50">
                     <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -318,9 +322,32 @@ export default function Skills() {
                       className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70"
                     >
                       <td className="px-5 py-4">
-                        <p className="font-semibold text-slate-900">
-                          {skill.name}
-                        </p>
+                        <div className="flex items-center gap-3">
+                          {/* ICON PREVIEW */}
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 overflow-hidden border border-slate-200">
+                            {skill.icon ? (
+                              // If it's a URL, show image. If it's a Lucide name, we just show a generic icon or attempt render
+                              skill.icon.startsWith("http") || skill.icon.startsWith("data:") ? (
+                                <img
+                                  src={skill.icon}
+                                  alt={skill.name}
+                                  className="h-full w-full object-contain p-1"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentElement.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>';
+                                  }}
+                                />
+                              ) : (
+                                <Code2 size={16} className="text-slate-500" />
+                              )
+                            ) : (
+                              <Code2 size={16} className="text-slate-400" />
+                            )}
+                          </div>
+                          <p className="font-semibold text-slate-900">
+                            {skill.name}
+                          </p>
+                        </div>
                       </td>
 
                       <td className="px-5 py-4">
@@ -409,12 +436,22 @@ export default function Skills() {
                   className="p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-base font-bold text-slate-900">
-                        {skill.name}
-                      </h3>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                         {/* Mobile Icon */}
+                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-100 overflow-hidden border border-slate-200">
+                            {skill.icon && (skill.icon.startsWith("http") || skill.icon.startsWith("data:")) ? (
+                                <img src={skill.icon} alt={skill.name} className="h-full w-full object-contain p-0.5" />
+                            ) : (
+                                <Code2 size={14} className="text-slate-500" />
+                            )}
+                         </div>
+                         <h3 className="truncate text-base font-bold text-slate-900">
+                            {skill.name}
+                         </h3>
+                      </div>
 
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-slate-500 ml-10">
                         {skill.category || "General"}
                       </p>
                     </div>
@@ -589,6 +626,33 @@ export default function Skills() {
                   placeholder="e.g. Frontend"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                 />
+              </div>
+
+              {/* ICON INPUT (NEW) */}
+              <div>
+                <label
+                  htmlFor="skill-icon"
+                  className="mb-2 block text-sm font-semibold text-slate-700"
+                >
+                  Icon (URL or Name)
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <ImageIcon size={18} />
+                  </div>
+                  <input
+                    id="skill-icon"
+                    name="icon"
+                    type="text"
+                    value={form.icon}
+                    onChange={handleChange}
+                    placeholder="e.g. https://example.com/icon.png or Code2"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-3 text-sm text-slate-900 transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                  />
+                </div>
+                <p className="mt-1.5 text-xs text-slate-400">
+                  Paste an Image URL or a Lucide icon name (e.g. Code2, Database).
+                </p>
               </div>
 
               {/* Proficiency */}

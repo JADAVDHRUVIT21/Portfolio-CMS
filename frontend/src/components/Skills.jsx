@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Code2 } from "lucide-react";
 import api from "../services/api";
 import { Reveal } from "./Hero";
@@ -238,187 +238,133 @@ export default function Skills() {
               const style = cardStyles[i % cardStyles.length];
 
               return (
-                <SkillCard
+                <Reveal
                   key={skill.id}
-                  skill={skill}
-                  index={i}
-                  style={style}
-                  proficiency={proficiency}
-                />
+                  delay={i * 80}
+                  y={30}
+                  className="h-full"
+                >
+                  <article
+                    className={`
+                      group relative h-full rounded-2xl border p-6
+                      border-slate-200 bg-white
+                      dark:border-slate-800 dark:bg-slate-950
+                      transition-all duration-400
+                      ease-[cubic-bezier(0.22,1,0.36,1)]
+                      hover:-translate-y-1.5 hover:scale-[1.02]
+                      ${style.border}
+                      ${style.tint}
+                      hover:shadow-[0_20px_45px_-20px_rgba(37,99,235,0.4)]
+                      dark:hover:shadow-[0_20px_45px_-20px_rgba(59,130,246,0.5)]
+                    `}
+                  >
+                    {/* Hover gradient */}
+                    <span
+                      aria-hidden="true"
+                      className={`
+                        pointer-events-none absolute inset-0 rounded-2xl
+                        bg-gradient-to-br opacity-0 transition-opacity duration-400
+                        group-hover:opacity-100
+                        ${style.gradient.replace('from-', 'group-hover:from-').replace('to-', 'group-hover:to-')}
+                      `}
+                      style={{
+                        backgroundImage: `linear-gradient(to bottom right, var(--tw-gradient-stops))`
+                      }}
+                    />
+
+                    {/* Icon */}
+                    <div
+                      className="
+                        relative flex h-12 w-12 items-center justify-center
+                        rounded-xl bg-white dark:bg-slate-900
+                        border border-slate-100 dark:border-slate-800
+                        shadow-sm
+                        transition-all duration-400
+                        ease-[cubic-bezier(0.22,1,0.36,1)]
+                        group-hover:scale-110
+                        group-hover:rotate-3
+                        overflow-hidden
+                      "
+                    >
+                      <SkillIcon
+                        icon={skill.icon}
+                        className={`h-full w-full ${style.text.replace('group-hover:', 'text-')}`}
+                      />
+                    </div>
+
+                    {/* Skill name + proficiency */}
+                    <div className="relative mt-5 flex items-center justify-between gap-3">
+                      <h3 className={`text-lg font-bold text-slate-900 dark:text-white transition-colors duration-300 ${style.text}`}>
+                        {skill.name}
+                      </h3>
+
+                      <span className={`text-sm font-bold transition-colors duration-300 ${style.text.replace('group-hover:', 'text-')}`}>
+                        {proficiency}%
+                      </span>
+                    </div>
+
+                    {/* Category */}
+                    {skill.category && (
+                      <p className={`relative mt-2 text-sm font-medium transition-colors duration-300 ${style.text.replace('group-hover:', 'text-')}`}>
+                        {skill.category}
+                      </p>
+                    )}
+
+                    {/* Description */}
+                    {skill.description && (
+                      <p className="relative mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                        {skill.description}
+                      </p>
+                    )}
+
+                    {/* Skill Progress */}
+                    <div className="relative mt-6">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          Proficiency
+                        </span>
+
+                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                          {proficiency}%
+                        </span>
+                      </div>
+
+                      {/* Background line */}
+                      <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                        {/* Colorful progress */}
+                        <div
+                          className={`
+                            h-full rounded-full
+                            bg-gradient-to-r
+                            ${style.progress}
+                            ${style.progressShadow}
+                            transition-all duration-1000
+                            ease-[cubic-bezier(0.22,1,0.36,1)]
+                            ${style.progressShadowHover}
+                          `}
+                          style={{
+                            width: `${proficiency}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Bottom Accent Line */}
+                    <div
+                      className={`
+                        absolute bottom-0 left-0 h-[3px] w-0
+                        ${style.accent}
+                        transition-all duration-500
+                        group-hover:w-full
+                      `}
+                    />
+                  </article>
+                </Reveal>
               );
             })}
           </div>
         )}
       </div>
     </section>
-  );
-}
-
-/* =========================================================
-   SKILL CARD COMPONENT (WITH ABOUT PAGE ANIMATIONS)
-========================================================= */
-function SkillCard({ skill, index, style, proficiency }) {
-  const cardRef = useRef(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-
-  // 3D Tilt Effect on Mouse Move
-  const handleMouseMove = (e) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    
-    const xPct = (mouseX / width - 0.5) * 2;
-    const yPct = (mouseY / height - 0.5) * 2;
-    
-    const maxTilt = 8; 
-    setTilt({
-      x: -yPct * maxTilt,
-      y: xPct * maxTilt,
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setTilt({ x: 0, y: 0 });
-  };
-
-  return (
-    <Reveal delay={index * 80} y={30} className="h-full">
-      <div
-        ref={cardRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        style={{
-          transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-          transition: "transform 0.15s ease-out, box-shadow 0.3s ease, border-color 0.3s ease",
-        }}
-        className={`
-          group relative h-full rounded-2xl border p-6
-          border-slate-200 bg-white
-          dark:border-slate-800 dark:bg-slate-950
-          ${style.border}
-          ${style.tint}
-          hover:shadow-[0_20px_45px_-20px_rgba(37,99,235,0.4)]
-          dark:hover:shadow-[0_20px_45px_-20px_rgba(59,130,246,0.5)]
-        `}
-      >
-        {/* =================================================
-            SHINE SWEEP EFFECT
-        ================================================= */}
-        <div
-          className="
-            pointer-events-none absolute inset-0 z-20 rounded-2xl
-            bg-gradient-to-tr from-transparent via-white/10 to-transparent
-            opacity-0 group-hover:opacity-100
-            -translate-x-full group-hover:translate-x-full
-            transition-all duration-1000 ease-out
-            dark:via-white/[0.03]
-          "
-        />
-
-        {/* Hover gradient */}
-        <span
-          aria-hidden="true"
-          className={`
-            pointer-events-none absolute inset-0 rounded-2xl
-            bg-gradient-to-br opacity-0 transition-opacity duration-400
-            group-hover:opacity-100
-            ${style.gradient.replace('from-', 'group-hover:from-').replace('to-', 'group-hover:to-')}
-          `}
-          style={{
-            backgroundImage: `linear-gradient(to bottom right, var(--tw-gradient-stops))`
-          }}
-        />
-
-        {/* Icon */}
-        <div
-          className="
-            relative z-20 flex h-12 w-12 items-center justify-center
-            rounded-xl bg-white dark:bg-slate-900
-            border border-slate-100 dark:border-slate-800
-            shadow-sm
-            transition-all duration-400
-            ease-[cubic-bezier(0.22,1,0.36,1)]
-            group-hover:scale-110
-            group-hover:rotate-3
-            overflow-hidden
-          "
-        >
-          <SkillIcon
-            icon={skill.icon}
-            className={`h-full w-full ${style.text.replace('group-hover:', 'text-')}`}
-          />
-        </div>
-
-        {/* Skill name + proficiency */}
-        <div className="relative z-20 mt-5 flex items-center justify-between gap-3">
-          <h3 className={`text-lg font-bold text-slate-900 dark:text-white transition-colors duration-300 ${style.text}`}>
-            {skill.name}
-          </h3>
-
-          <span className={`text-sm font-bold transition-colors duration-300 ${style.text.replace('group-hover:', 'text-')}`}>
-            {proficiency}%
-          </span>
-        </div>
-
-        {/* Category */}
-        {skill.category && (
-          <p className={`relative z-20 mt-2 text-sm font-medium transition-colors duration-300 ${style.text.replace('group-hover:', 'text-')}`}>
-            {skill.category}
-          </p>
-        )}
-
-        {/* Description */}
-        {skill.description && (
-          <p className="relative z-20 mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-            {skill.description}
-          </p>
-        )}
-
-        {/* Skill Progress */}
-        <div className="relative z-20 mt-6">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Proficiency
-            </span>
-
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-              {proficiency}%
-            </span>
-          </div>
-
-          {/* Background line */}
-          <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-            {/* Colorful progress */}
-            <div
-              className={`
-                h-full rounded-full
-                bg-gradient-to-r
-                ${style.progress}
-                ${style.progressShadow}
-                transition-all duration-1000
-                ease-[cubic-bezier(0.22,1,0.36,1)]
-                ${style.progressShadowHover}
-              `}
-              style={{
-                width: `${proficiency}%`,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Bottom Accent Line */}
-        <div
-          className={`
-            absolute bottom-0 left-0 h-[3px] w-0 z-20
-            ${style.accent}
-            transition-all duration-500
-            group-hover:w-full
-          `}
-        />
-      </div>
-    </Reveal>
   );
 }

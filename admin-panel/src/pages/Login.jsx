@@ -32,39 +32,35 @@ export default function Login() {
     setSplash(true);
     setSplashSuccess(false);
 
-    // Safety timeout - if login takes more than 15s, fail
+    // 90s timeout - handles Render free tier cold starts (can take 30-60s)
     const timeoutId = setTimeout(() => {
-      setError("Request timed out. Please check your connection and try again.");
+      setError("Request timed out. The server may be waking up — please try again.");
       setLoading(false);
       setSplash(false);
-    }, 15000);
+    }, 90000);
 
     try {
       console.log("🔵 Attempting login...");
       const response = await api.post("/auth/login", form);
       console.log("✅ Login response:", response.data);
 
-      const { access_token, refresh_token, user: userFromLogin } = response.data;
+      const { access_token, refresh_token } = response.data;
 
       if (!access_token) {
         throw new Error("No access token received from server");
       }
 
-      // Try to get user data - first from login response, then from /auth/me
-      let user = userFromLogin;
-
-      if (!user) {
-        console.log("🔵 Fetching user data from /auth/me...");
-        const userResponse = await api.get("/auth/me", {
-          headers: { Authorization: `Bearer ${access_token}` },
-        });
-        user = userResponse.data;
-        console.log("✅ User data:", user);
-      }
+      // Always fetch user data from /auth/me (login response doesn't include user)
+      console.log("🔵 Fetching user data from /auth/me...");
+      const userResponse = await api.get("/auth/me", {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+      const user = userResponse.data;
+      console.log("✅ User data:", user);
 
       // Check admin status (handle both is_admin and isAdmin)
       const isAdmin = user?.is_admin === true || user?.isAdmin === true;
-      
+
       if (!isAdmin) {
         clearTimeout(timeoutId);
         setError("Admin access is required.");
@@ -89,14 +85,14 @@ export default function Login() {
       console.error("❌ Error message:", err.message);
 
       let errorMsg = "Invalid email or password.";
-      
+
       if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
         errorMsg = "Request timed out. Please try again.";
       } else if (err.message === "Network Error" || !err.response) {
         errorMsg = "Cannot connect to server. Check your internet or backend URL.";
       } else if (err.response?.data?.detail) {
-        errorMsg = typeof err.response.data.detail === "string" 
-          ? err.response.data.detail 
+        errorMsg = typeof err.response.data.detail === "string"
+          ? err.response.data.detail
           : "Invalid credentials.";
       } else if (err.response?.status === 401) {
         errorMsg = "Invalid email or password.";
@@ -211,7 +207,7 @@ export default function Login() {
         <div className="absolute top-[40%] left-[30%] w-[45%] h-[45%] rounded-full bg-pink-500/25 orb-5" />
       </div>
 
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.04] grain-overlay pointer-events-none"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
@@ -225,14 +221,14 @@ export default function Login() {
       <div className={`w-full max-w-[420px] relative z-10 transition-all duration-700 ${
         splash ? 'opacity-0 scale-95 blur-md pointer-events-none' : 'opacity-100 scale-100 blur-0'
       }`}>
-        
+
         <div className="bg-white/[0.08] backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_60px_rgb(0,0,0,0.5)] border border-white/10 overflow-hidden">
-          
+
           <div className="px-8 pt-10 pb-6 text-center">
             <div className="mx-auto w-16 h-16 rounded-[1.25rem] bg-gradient-to-br from-white/20 to-white/5 border border-white/20 flex items-center justify-center shadow-lg mb-5">
               <ShieldCheck size={30} className="text-white" strokeWidth={1.5} />
             </div>
-            
+
             <h1 className="text-2xl font-semibold tracking-tight text-white">
               Admin Panel
             </h1>
@@ -308,20 +304,20 @@ export default function Login() {
       {/* ==================== FULL-PAGE SPLASH SCREEN ==================== */}
       {splash && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center splash-enter bg-[#050510]/80 backdrop-blur-3xl">
-          
+
           <div className={`absolute w-[500px] h-[500px] rounded-full blur-[120px] transition-colors duration-700 ${
             splashSuccess ? 'bg-green-500/30' : 'bg-blue-500/30'
           } pulse-glow`} />
 
           <div className="relative z-10 flex flex-col items-center">
-            
+
             <div className="relative w-24 h-24 flex items-center justify-center">
               {!splashSuccess ? (
                 <>
                   <div className="absolute inset-0 rounded-full border-[3px] border-white/10" />
                   <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-white splash-ring" />
                   <div className="absolute inset-2 rounded-full border-[2px] border-transparent border-t-white/40 splash-ring" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }} />
-                  
+
                   <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-sm">
                     <ShieldCheck size={26} className="text-white" strokeWidth={1.5} />
                   </div>
@@ -330,7 +326,7 @@ export default function Login() {
                 <>
                   <div className="absolute inset-0 rounded-full border-[3px] border-green-400/30" />
                   <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-green-400" />
-                  
+
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/40">
                     <CheckCircle2 size={28} className="text-white splash-check" strokeWidth={2.5} />
                   </div>
@@ -357,7 +353,7 @@ export default function Login() {
               )}
 
               <div className="mt-6 w-48 h-1 rounded-full bg-white/10 overflow-hidden mx-auto">
-                <div 
+                <div
                   className={`h-full rounded-full transition-all duration-[1400ms] ease-out ${
                     splashSuccess ? 'bg-green-400' : 'bg-white/60'
                   }`}

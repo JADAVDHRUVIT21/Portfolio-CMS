@@ -278,3 +278,32 @@ def update_my_password(
     return {
         "message": "Password updated successfully"
     }
+
+
+# =========================================================
+# TEMPORARY: Promote user to admin
+# ⚠️ DELETE THIS ENDPOINT AFTER USE
+# =========================================================
+
+class PromoteRequest(BaseModel):
+    email: str
+    secret: str
+
+
+@router.post("/promote-to-admin")
+def promote_to_admin(
+    data: PromoteRequest,
+    db: Session = Depends(get_db),
+):
+    if data.secret != "DHruvit_Promote_2026_Xyz":
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.is_admin = True
+    db.commit()
+    db.refresh(user)
+
+    return {"message": f"{user.email} is now admin"}

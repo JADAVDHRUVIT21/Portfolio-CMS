@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 import os
 
 from app.core.database import Base, engine
@@ -30,6 +31,37 @@ Base.metadata.create_all(bind=engine)
 
 
 # ---------------------------------------------------------
+# AUTO-MIGRATE COLUMN WIDTHS
+# ---------------------------------------------------------
+# PostgreSQL keeps the original column width even if the
+# SQLAlchemy model changes. These ALTER statements make
+# sure columns are wide enough for long URLs.
+
+def run_migrations():
+    migrations = [
+        # (table, column, new_type)
+        ("about_cards", "icon", "VARCHAR(1000)"),
+        ("about", "profile_image", "VARCHAR(1000)"),
+    ]
+
+    for table, column, new_type in migrations:
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        f"ALTER TABLE {table} "
+                        f"ALTER COLUMN {column} TYPE {new_type}"
+                    )
+                )
+            print(f"✅ Migrated {table}.{column} → {new_type}")
+        except Exception as e:
+            print(f"⚠️ Skipped {table}.{column}: {e}")
+
+
+run_migrations()
+
+
+# ---------------------------------------------------------
 # FASTAPI APP
 # ---------------------------------------------------------
 
@@ -42,8 +74,6 @@ app = FastAPI(
 # ---------------------------------------------------------
 # CORS CONFIGURATION
 # ---------------------------------------------------------
-# Allow both local dev AND production Vercel domains.
-# Add your own custom domain here too if you have one.
 
 origins = [
     # Local development
@@ -59,14 +89,8 @@ origins = [
 
     # Production - Admin panel
     "https://portfolio-cms-admin-panel.vercel.app",
-
-    # Optional: allow all Vercel preview deployments for your projects
-    # (Wildcards are NOT supported by CORSMiddleware, so list them explicitly
-    #  or use a regex below.)
 ]
 
-# Also allow any preview deployment URL of your Vercel projects
-# and any extra origins from env variable ALLOWED_ORIGINS (comma-separated)
 extra_origins = os.getenv("ALLOWED_ORIGINS", "")
 if extra_origins:
     origins.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
@@ -74,7 +98,7 @@ if extra_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",  # allow all *.vercel.app preview URLs
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -84,7 +108,6 @@ app.add_middleware(
 # ---------------------------------------------------------
 # STATIC UPLOADS
 # ---------------------------------------------------------
-# Ensure uploads dir exists so StaticFiles doesn't crash on first boot
 
 os.makedirs("uploads", exist_ok=True)
 

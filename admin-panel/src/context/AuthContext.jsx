@@ -10,43 +10,59 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem("access_token");
 
+    console.log("🔵 AuthContext: init, has token:", !!token);
+    console.log("🔵 API base URL:", api.defaults.baseURL);
+
     if (!token) {
       setLoading(false);
       return;
     }
 
+    let cancelled = false;
+
     api
       .get("/auth/me")
       .then((response) => {
+        if (cancelled) return;
+        console.log("✅ AuthContext: got user", response.data);
         setUser(response.data);
       })
-      .catch(() => {
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("❌ AuthContext: /auth/me failed", err.message);
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user");
         setUser(null);
       })
       .finally(() => {
+        if (cancelled) return;
+        console.log("🔵 AuthContext: loading = false");
         setLoading(false);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = (accessToken, refreshToken, userData) => {
     localStorage.setItem("access_token", accessToken);
     localStorage.setItem("refresh_token", refreshToken);
+    localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
   };
 
   const logout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
     setUser(null);
   };
 
-  // =========================================================
-  // NEW: Update user in global state (called after profile edit)
-  // =========================================================
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
   return (
@@ -56,7 +72,7 @@ export function AuthProvider({ children }) {
         loading,
         login,
         logout,
-        updateUser, // <-- Exposed to all consumers
+        updateUser,
         isAuthenticated: !!user,
         isAdmin: user?.is_admin === true,
       }}

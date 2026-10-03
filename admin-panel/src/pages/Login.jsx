@@ -30,18 +30,43 @@ export default function Login() {
     setError("");
     setLoading(true);
     setSplash(true);
+    setSplashSuccess(false);
+
+    // Safety timeout - if login takes more than 15s, fail
+    const timeoutId = setTimeout(() => {
+      setError("Request timed out. Please check your connection and try again.");
+      setLoading(false);
+      setSplash(false);
+    }, 15000);
 
     try {
+      console.log("🔵 Attempting login...");
       const response = await api.post("/auth/login", form);
-      const { access_token, refresh_token } = response.data;
+      console.log("✅ Login response:", response.data);
 
-      const userResponse = await api.get("/auth/me", {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
+      const { access_token, refresh_token, user: userFromLogin } = response.data;
 
-      const user = userResponse.data;
+      if (!access_token) {
+        throw new Error("No access token received from server");
+      }
 
-      if (!user.is_admin) {
+      // Try to get user data - first from login response, then from /auth/me
+      let user = userFromLogin;
+
+      if (!user) {
+        console.log("🔵 Fetching user data from /auth/me...");
+        const userResponse = await api.get("/auth/me", {
+          headers: { Authorization: `Bearer ${access_token}` },
+        });
+        user = userResponse.data;
+        console.log("✅ User data:", user);
+      }
+
+      // Check admin status (handle both is_admin and isAdmin)
+      const isAdmin = user?.is_admin === true || user?.isAdmin === true;
+      
+      if (!isAdmin) {
+        clearTimeout(timeoutId);
         setError("Admin access is required.");
         setLoading(false);
         setSplash(false);
@@ -51,14 +76,37 @@ export default function Login() {
       login(access_token, refresh_token, user);
       setSplashSuccess(true);
 
+      clearTimeout(timeoutId);
+
       setTimeout(() => {
         navigate("/dashboard");
       }, 1400);
 
     } catch (err) {
-      setError(
-        err.response?.data?.detail || "Invalid email or password."
-      );
+      clearTimeout(timeoutId);
+      console.error("❌ Login error:", err);
+      console.error("❌ Error response:", err.response);
+      console.error("❌ Error message:", err.message);
+
+      let errorMsg = "Invalid email or password.";
+      
+      if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+        errorMsg = "Request timed out. Please try again.";
+      } else if (err.message === "Network Error" || !err.response) {
+        errorMsg = "Cannot connect to server. Check your internet or backend URL.";
+      } else if (err.response?.data?.detail) {
+        errorMsg = typeof err.response.data.detail === "string" 
+          ? err.response.data.detail 
+          : "Invalid credentials.";
+      } else if (err.response?.status === 401) {
+        errorMsg = "Invalid email or password.";
+      } else if (err.response?.status === 403) {
+        errorMsg = "Access forbidden. Admin only.";
+      } else if (err.response?.status >= 500) {
+        errorMsg = "Server error. Please try again later.";
+      }
+
+      setError(errorMsg);
       setLoading(false);
       setSplash(false);
     }
@@ -69,7 +117,6 @@ export default function Login() {
 
       {/* ==================== MOVING COLOR BACKGROUND ==================== */}
       <style>{`
-        /* Continuous flowing motion for each orb */
         @keyframes flow1 {
           0%   { transform: translate(-20%, -20%) scale(1); }
           25%  { transform: translate(60%, -10%) scale(1.2); }
@@ -101,8 +148,6 @@ export default function Login() {
           50%  { transform: translate(-40%, -30%) scale(1.3); }
           100% { transform: translate(30%, 30%) scale(1); }
         }
-
-        /* Color shifting - makes each orb cycle through hues */
         @keyframes hueShift {
           0%   { filter: blur(140px) hue-rotate(0deg); }
           50%  { filter: blur(140px) hue-rotate(180deg); }
@@ -117,24 +162,11 @@ export default function Login() {
           0%   { filter: blur(150px) hue-rotate(0deg); }
           100% { filter: blur(150px) hue-rotate(360deg); }
         }
-
-        .orb-1 { 
-          animation: flow1 18s ease-in-out infinite, hueShift 12s linear infinite; 
-        }
-        .orb-2 { 
-          animation: flow2 22s ease-in-out infinite, hueShiftReverse 15s linear infinite; 
-        }
-        .orb-3 { 
-          animation: flow3 20s ease-in-out infinite, hueShift 18s linear infinite; 
-        }
-        .orb-4 { 
-          animation: flow4 25s ease-in-out infinite, hueShiftReverse 20s linear infinite; 
-        }
-        .orb-5 { 
-          animation: flow5 16s ease-in-out infinite, hueShiftSlow 25s linear infinite; 
-        }
-
-        /* Grain texture */
+        .orb-1 { animation: flow1 18s ease-in-out infinite, hueShift 12s linear infinite; }
+        .orb-2 { animation: flow2 22s ease-in-out infinite, hueShiftReverse 15s linear infinite; }
+        .orb-3 { animation: flow3 20s ease-in-out infinite, hueShift 18s linear infinite; }
+        .orb-4 { animation: flow4 25s ease-in-out infinite, hueShiftReverse 20s linear infinite; }
+        .orb-5 { animation: flow5 16s ease-in-out infinite, hueShiftSlow 25s linear infinite; }
         @keyframes grain {
           0%, 100% { transform: translate(0, 0); }
           10% { transform: translate(-5%, -5%); }
@@ -148,27 +180,22 @@ export default function Login() {
           90% { transform: translate(10%, 5%); }
         }
         .grain-overlay { animation: grain 8s steps(10) infinite; }
-
-        /* Splash animations */
         @keyframes splashRing {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
         .splash-ring { animation: splashRing 1s linear infinite; }
-
         @keyframes splashCheck {
           0% { transform: scale(0) rotate(-45deg); opacity: 0; }
           50% { transform: scale(1.2) rotate(-45deg); }
           100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
         .splash-check { animation: splashCheck 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
         @keyframes splashFadeIn {
           from { opacity: 0; backdrop-filter: blur(0px); }
           to { opacity: 1; backdrop-filter: blur(40px); }
         }
         .splash-enter { animation: splashFadeIn 0.5s ease-out forwards; }
-
         @keyframes pulseGlow {
           0%, 100% { opacity: 0.5; transform: scale(1); }
           50% { opacity: 0.8; transform: scale(1.05); }
@@ -176,7 +203,6 @@ export default function Login() {
         .pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
       `}</style>
 
-      {/* Moving Color Orbs */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-[60%] h-[60%] rounded-full bg-blue-600/50 orb-1" />
         <div className="absolute bottom-0 right-0 w-[65%] h-[65%] rounded-full bg-indigo-600/45 orb-2" />
@@ -185,7 +211,6 @@ export default function Login() {
         <div className="absolute top-[40%] left-[30%] w-[45%] h-[45%] rounded-full bg-pink-500/25 orb-5" />
       </div>
 
-      {/* Grain Texture */}
       <div 
         className="absolute inset-0 opacity-[0.04] grain-overlay pointer-events-none"
         style={{
@@ -194,19 +219,15 @@ export default function Login() {
         }}
       />
 
-      {/* Vignette for cinematic depth */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/40 pointer-events-none" />
-
 
       {/* ==================== LOGIN FORM ==================== */}
       <div className={`w-full max-w-[420px] relative z-10 transition-all duration-700 ${
         splash ? 'opacity-0 scale-95 blur-md pointer-events-none' : 'opacity-100 scale-100 blur-0'
       }`}>
         
-        {/* Glass Card */}
         <div className="bg-white/[0.08] backdrop-blur-2xl rounded-[2.5rem] shadow-[0_8px_60px_rgb(0,0,0,0.5)] border border-white/10 overflow-hidden">
           
-          {/* Header */}
           <div className="px-8 pt-10 pb-6 text-center">
             <div className="mx-auto w-16 h-16 rounded-[1.25rem] bg-gradient-to-br from-white/20 to-white/5 border border-white/20 flex items-center justify-center shadow-lg mb-5">
               <ShieldCheck size={30} className="text-white" strokeWidth={1.5} />
@@ -228,19 +249,12 @@ export default function Login() {
               </div>
             )}
 
-            {/* Email */}
             <div className="space-y-1.5">
-              <label
-                htmlFor="email"
-                className="block text-xs font-semibold text-white/50 uppercase tracking-wider ml-1"
-              >
+              <label htmlFor="email" className="block text-xs font-semibold text-white/50 uppercase tracking-wider ml-1">
                 Email
               </label>
               <div className="relative group">
-                <Mail
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-white transition-colors"
-                />
+                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-white transition-colors" />
                 <input
                   id="email"
                   name="email"
@@ -255,19 +269,12 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Password */}
             <div className="space-y-1.5">
-              <label
-                htmlFor="password"
-                className="block text-xs font-semibold text-white/50 uppercase tracking-wider ml-1"
-              >
+              <label htmlFor="password" className="block text-xs font-semibold text-white/50 uppercase tracking-wider ml-1">
                 Password
               </label>
               <div className="relative group">
-                <LockKeyhole
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-white transition-colors"
-                />
+                <LockKeyhole size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-white transition-colors" />
                 <input
                   id="password"
                   name="password"
@@ -282,7 +289,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Button */}
             <button
               type="submit"
               disabled={loading}
@@ -298,7 +304,6 @@ export default function Login() {
           Secure Portfolio CMS Administration
         </p>
       </div>
-
 
       {/* ==================== FULL-PAGE SPLASH SCREEN ==================== */}
       {splash && (

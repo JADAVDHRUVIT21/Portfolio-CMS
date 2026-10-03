@@ -21,9 +21,16 @@ from app.routes.dashboard import router as dashboard_router
 from app import models
 
 
-# Create database tables
+# ---------------------------------------------------------
+# CREATE DATABASE TABLES
+# ---------------------------------------------------------
+
 Base.metadata.create_all(bind=engine)
 
+
+# ---------------------------------------------------------
+# FASTAPI APP
+# ---------------------------------------------------------
 
 app = FastAPI(
     title="Portfolio CMS API",
@@ -57,7 +64,7 @@ app.add_middleware(
 
 app.mount(
     "/uploads",
-    StaticFiles(directory="uploads"),
+    StaticFiles(directory="backend/uploads"),
     name="uploads",
 )
 

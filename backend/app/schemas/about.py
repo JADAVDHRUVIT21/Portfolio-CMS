@@ -19,7 +19,10 @@ class AboutBase(BaseModel):
 
     long_description: str | None = None
 
-    profile_image: str | None = None
+    profile_image: str | None = Field(
+        default=None,
+        max_length=1000
+    )
 
 
 class AboutCreate(AboutBase):
@@ -55,7 +58,7 @@ class AboutCardBase(BaseModel):
 
     icon: str | None = Field(
         default=None,
-        max_length=100
+        max_length=1000
     )
 
     display_order: int = Field(
